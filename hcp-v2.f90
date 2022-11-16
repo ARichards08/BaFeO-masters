@@ -9,8 +9,9 @@ real(kind=dp), parameter :: pi=4.0_dp*atan(1.0_dp)
 ! 27 copies of the basis cell to account for neighbour interactions. distances holds the distances
 
 real(kind=dp), dimension(:, :), allocatable :: prim_cell, n_cell, n_cell_ortho, cell, cell_ortho, distances
-real(kind=dp) :: a, b, c, x, y, z, t, r, r2, min_r, min_r2, min_r3
+real(kind=dp) :: a, b, c, x, y, z, t, r, r2, min_r, min_r2, min_r3, abs_distance
 integer :: N_prim, N, istat, i, j, k, l, m, counter, nn, nnn, nnnn, x_prim_mul, y_prim_mul, x_unit, y_unit, prim_in_unit
+integer :: atoms_out_of_pbc
 
 ! This is a cool hcp sim http://lampx.tugraz.at/~hadley/ss1/crystalstructure/structures/hcp/hcp.php
 
@@ -21,13 +22,6 @@ a=0.229_dp
 
 b=1.0_dp
 c=sqrt(8.0_dp/3.0_dp)
-
-!x=a
-!y=a*cos(pi/6.0_dp)
-!z=c
-
-! First need to set up the rhombus unit cell, and then convert to the orthogonal unti cell
-! a=x and b=y coordinate kind of. c=z.  a and b are equal in length, with a 60 deg angle between
 
 ! Define number of atoms in primitive unit cell n
 N_prim=2
@@ -51,6 +45,39 @@ if(istat/=0) stop 'Error allocating prim_cell'
 
 prim_cell(:, 1) = [(1.0_dp/3.0_dp), (2.0_dp/3.0_dp), 1.0_dp/4.0_dp]
 prim_cell(:, 2) = [(2.0_dp/3.0_dp), (1.0_dp/3.0_dp), 3.0_dp/4.0_dp]
+
+! Implement periodic boundary conditions, if an atom has fraction coodinates that are not 0 =< a, b, c =< 1, add or subtract 
+! multiples of 1 until all of the atoms satisfy this condition
+
+! Do while there are still atoms outside of pbc
+counter=1
+do while (counter > 0)
+
+    ! Add or subtract 1.0_dp from the atoms out of pbc
+    do i=1, 3, 1
+        do j=1, N_prim, 1
+            if (prim_cell(i, j) < 0.0_dp) then
+                prim_cell(i, j)=prim_cell(i, j)+1.0_dp
+            elseif (prim_cell(i, j) > 1.0_dp) then
+                prim_cell(i, j)=prim_cell(i, j)-1.0_dp
+            end if
+        end do
+    end do
+
+    ! Assume there are no more atoms out of pbc
+    counter=0
+
+    ! Check if there are any atoms now out of pbc
+    do i=1, 3, 1
+        do j=1, N_prim, 1
+            if (prim_cell(i, j) < 0.0_dp) then
+                counter=counter+1
+            elseif (prim_cell(i, j) > 1.0_dp) then
+                counter=counter+1
+            end if
+        end do
+    end do
+end do
 
 ! Create unit cell using multiples of the primitive cell at the origin
 allocate (cell(3, N), stat=istat)
