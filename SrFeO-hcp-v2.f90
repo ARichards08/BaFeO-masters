@@ -138,7 +138,7 @@ if(istat/=0) stop 'Error allocating n_cell'
 counter=1
 do l=1, N, 1
     do i=-x_prim_mul, x_prim_mul, x_prim_mul
-        do j=-y_prim_mul, y_prim_mul, x_prim_mul
+        do j=-y_prim_mul, y_prim_mul, y_prim_mul
             do k=-1, 1, 1 
                 n_cell(:, counter) =[cell(1, l)+real(i, kind=dp), cell(2, l)+real(j, kind=dp), cell(3, l)+real(k, kind=dp)&
                 &, cell(4, l), cell(5, l), cell(6, l)]
@@ -274,13 +274,13 @@ print *, min_r3, min_r3*a, nnnn
 deallocate (prim_cell, stat=istat)
 if(istat/=0) stop 'Error deallocating prim_cell'
 deallocate (cell, stat=istat)
-if(istat/=0) stop 'Error deallocating n_cell'
-deallocate (cell_ortho, stat=istat)
-if(istat/=0) stop 'Error deallocating n_cell_ortho'
-deallocate (n_cell, stat=istat)
 if(istat/=0) stop 'Error deallocating cell'
-deallocate (n_cell_ortho, stat=istat)
+deallocate (cell_ortho, stat=istat)
 if(istat/=0) stop 'Error deallocating cell_ortho'
+deallocate (n_cell, stat=istat)
+if(istat/=0) stop 'Error deallocating n_cell'
+deallocate (n_cell_ortho, stat=istat)
+if(istat/=0) stop 'Error deallocating n_cell_ortho'
 deallocate (distances, stat=istat)
 if(istat/=0) stop 'Error deallocating distances'
 
