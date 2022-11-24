@@ -10,11 +10,12 @@ real(kind=dp), parameter :: pi=4.0_dp*atan(1.0_dp)
 
 real(kind=dp), dimension(:, :), allocatable :: atom_data, prim_cell, n_cell, n_cell_ortho, cell, cell_ortho, distances
 real(kind=dp), dimension(:, :), allocatable :: Fe_distances, mag_wyckoff
+real(kind=dp), dimension(25) :: correct_Fe_d
 real(kind=dp) :: a, b, c, x, y, z, t, r, r2, atom_i, atom_j, min_r
 
 integer, dimension(25) :: correct_nn
 integer :: N_prim, N, istat, i, j, k, l, counter, nn, x_prim_mul, y_prim_mul, x_unit, y_unit, prim_in_unit, atom_types
-integer :: failcount, x_int, y_int, z_int, mag_atoms, cell_mag_atoms
+integer :: failcount, x_int, y_int, z_int, mag_atoms, cell_mag_atoms, mag_atom_types
 
 ! This is a cool hcp sim http://lampx.tugraz.at/~hadley/ss1/crystalstructure/structures/hcp/hcp.php
 
@@ -44,12 +45,6 @@ prim_in_unit=x_prim_mul*y_prim_mul
 
 ! Atoms in the total unit cell
 N=N_prim*prim_in_unit
-
-! I might make the program work this out later but for now
-! Just have this set to the number of magnetic atoms in a primitive cell
-mag_atoms=24
-
-cell_mag_atoms=mag_atoms*prim_in_unit
 
 ! Atom data is based of data from table 1: https://www.sciencedirect.com/science/article/pii/030488539290253K
 ! Fe2 is 2b not 4e. The functions at the bottom of the program can be used as a key for the element, material and wyckoff ids
@@ -82,12 +77,12 @@ atom_data(:, 11) = [0.5051_dp, 2*(0.5051_dp), 0.1510_dp, 11.0_dp, 3.0_dp, 6.0_dp
 ! 3rd column: interaction distance, 4th column: number of interactions
 ! because every magnetic wyckoff position can interact with all the other including itself in neighbouring cells,
 ! mg_wyckoff is 4 x (number of magnetic wyckoff positions)**2 size
-counter=0
+mag_atom_types=0
 do i=1, size(atom_data, 2), 1
-    if (trim(material_id(atom_data(5, i))) == 'Fe') counter=counter+1
+    if (trim(material_id(atom_data(5, i))) == 'Fe') mag_atom_types=mag_atom_types+1
 end do
 
-allocate (mag_wyckoff(4, counter**2), stat=istat)
+allocate (mag_wyckoff(4, mag_atom_types**2), stat=istat)
 if(istat/=0) stop 'Error allocating mag_wyckoff'
 
 mag_wyckoff=0.0_dp
@@ -103,6 +98,17 @@ do i=1, size(atom_data, 2), 1
         end do
    end if
 end do
+
+! Calculate the number of magnetic atoms in a unit cell using the multiplicity of the magnetic wyckoff positions
+mag_atoms=0
+
+do i=1, size(atom_data, 2), 1
+    if (trim(material_id(atom_data(5, i))) == 'Fe') then
+        mag_atoms = mag_atoms + multiplicity(atom_data(6, i))
+    end if
+end do
+
+cell_mag_atoms=mag_atoms*prim_in_unit
 
 ! Create primitive cell
 ! Contains all the data, plus a specific id for each atom at the end
@@ -338,44 +344,31 @@ do i=1, size(mag_wyckoff, 2), 1
     end do
     
     ! nn has a lot of double ups, everything is x2 because of the number of primitive cells in a unit cell
-    ! and also the multiplicity of the wyckoff positions
+    ! and also the multiplicity of the interacting wyckoff positions
 
-    ! This bit is hard coded for the magnetic wyckoff positions in BaFe12O19, so not completely portable
-    if (trim(wyckoff_id(mag_wyckoff(1, i))) == '2a') nn=nn/(prim_in_unit*2)
-    if (trim(wyckoff_id(mag_wyckoff(1, i))) == '2b') nn=nn/(prim_in_unit*2)
-    if (trim(wyckoff_id(mag_wyckoff(1, i))) == '4f1') nn=nn/(prim_in_unit*4)
-    if (trim(wyckoff_id(mag_wyckoff(1, i))) == '4f2') nn=nn/(prim_in_unit*4)
-    if (trim(wyckoff_id(mag_wyckoff(1, i))) == '12k') nn=nn/(prim_in_unit*12)
+    nn = nn / (prim_in_unit * multiplicity(mag_wyckoff(2, i)))
 
     ! Saves nn to the mag_wyckoff array
     mag_wyckoff(4, i)=real(nn, kind=dp)
 
 end do
 
+! Correct values for the nearest enighbour number and the nearest neighbour distances for each type of interaction.
 correct_nn=[6, 2, 3, 3, 1, 2, 6, 3, 3, 1, 6, 6, 3, 1, 2, 6, 6, 1, 1, 2, 6, 6, 6, 6, 2]
-!do i=1, size(mag_wyckoff, 2), 1
-!    print *, wyckoff_id(mag_wyckoff(1, i)), wyckoff_id(mag_wyckoff(2, i)), a*mag_wyckoff(3, i), nint(mag_wyckoff(4, i)),&
-!    & correct_nn(i)
-!end do
+correct_Fe_d=[0.589_dp, 0.580_dp, 0.346_dp, 0.557_dp, 0.305_dp, 0.580_dp, 0.589_dp, 0.619_dp, 0.367_dp, 0.371_dp, 0.346_dp,&
+& 0.619_dp, 0.363_dp, 0.379_dp, 0.350_dp, 0.557_dp, 0.367_dp, 0.379_dp, 0.277_dp, 0.351_dp, 0.305_dp, 0.371_dp, 0.350_dp,&
+& 0.351_dp, 0.291_dp]
 
+! Printing results
 
-print *, 'Correct:'
+print *, 'Central atom wyckoff, Interacting atom wyckoff, Interaction distance, Number of interactions, Number from Lit,&
+& Relative distance error from Lit'
 do i=1, size(mag_wyckoff, 2), 1
-    if (nint(mag_wyckoff(4, i)) == correct_nn(i)) then
-        print *, wyckoff_id(mag_wyckoff(1, i)), wyckoff_id(mag_wyckoff(2, i)), a*mag_wyckoff(3, i), nint(mag_wyckoff(4, i)),&
-        & correct_nn(i)
-    end if
+    print *, wyckoff_id(mag_wyckoff(1, i)), ',', wyckoff_id(mag_wyckoff(2, i)), a*mag_wyckoff(3, i), nint(mag_wyckoff(4, i)),&
+    & correct_nn(i), (a*mag_wyckoff(3, i)-correct_Fe_d(i))/correct_Fe_d(i)
 end do
 
 
-
-print *, 'Incorrect:'
-do i=1, size(mag_wyckoff, 2), 1
-    if (nint(mag_wyckoff(4, i)) /= correct_nn(i)) then
-        print *, wyckoff_id(mag_wyckoff(1, i)), wyckoff_id(mag_wyckoff(2, i)), a*mag_wyckoff(3, i), nint(mag_wyckoff(4, i)),&
-        & correct_nn(i)
-    end if
-end do
 
 ! Deallocate arrays
 deallocate (atom_data, stat=istat)
@@ -556,7 +549,7 @@ end if
 return
 end function material_id
 
-! Function to print a string for an atom's wyckoff position corresponding to an index
+! Function to return a string for an atom's wyckoff position corresponding to an index
 character(len=3) function wyckoff_id(num)
 real(kind=dp) :: num
 
@@ -584,6 +577,35 @@ end if
 
 return
 end function wyckoff_id
+
+! Function to return the multiplicity of an atom type when given it's wyckoff position id
+integer function multiplicity(wyckoff)
+real(kind=dp) :: wyckoff
+
+if (wyckoff == 1.0_dp) then
+    multiplicity=2
+elseif (wyckoff == 2.0_dp) then
+    multiplicity=2
+elseif (wyckoff == 3.0_dp) then
+    multiplicity=2
+elseif (wyckoff == 4.0_dp) then
+    multiplicity=4
+elseif (wyckoff == 5.0_dp) then
+    multiplicity=4
+elseif (wyckoff == 6.0_dp) then
+    multiplicity=12
+elseif (wyckoff == 7.0_dp) then
+    multiplicity=4
+elseif (wyckoff == 8.0_dp) then
+    multiplicity=4
+elseif (wyckoff == 9.0_dp) then
+    multiplicity=6
+else
+    multiplicity=0
+end if
+
+return
+end function multiplicity
 
 ! Function to round a position or distance to 6dp
 real(kind=dp) function round6(long_num)
