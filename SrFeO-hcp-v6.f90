@@ -353,10 +353,22 @@ do i=1, size(mag_wyckoff, 2), 1
 end do
 
 correct_nn=[6, 2, 3, 3, 1, 2, 6, 3, 3, 1, 6, 6, 3, 1, 2, 6, 6, 1, 1, 2, 6, 6, 6, 6, 2]
+!do i=1, size(mag_wyckoff, 2), 1
+!    print *, wyckoff_id(mag_wyckoff(1, i)), wyckoff_id(mag_wyckoff(2, i)), a*mag_wyckoff(3, i), nint(mag_wyckoff(4, i)),&
+!    & correct_nn(i)
+!end do
+
+
+print *, 'Correct:'
 do i=1, size(mag_wyckoff, 2), 1
-    print *, wyckoff_id(mag_wyckoff(1, i)), wyckoff_id(mag_wyckoff(2, i)), a*mag_wyckoff(3, i), nint(mag_wyckoff(4, i)),&
-    & correct_nn(i)
+    if (nint(mag_wyckoff(4, i)) == correct_nn(i)) then
+        print *, wyckoff_id(mag_wyckoff(1, i)), wyckoff_id(mag_wyckoff(2, i)), a*mag_wyckoff(3, i), nint(mag_wyckoff(4, i)),&
+        & correct_nn(i)
+    end if
 end do
+
+
+
 print *, 'Incorrect:'
 do i=1, size(mag_wyckoff, 2), 1
     if (nint(mag_wyckoff(4, i)) /= correct_nn(i)) then
