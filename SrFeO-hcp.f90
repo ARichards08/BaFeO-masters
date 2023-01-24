@@ -23,11 +23,11 @@ integer :: failcount, x_int, y_int, z_int, mag_atoms, cell_mag_atoms, mag_atom_t
 ! a is the characteristic length (nearest neighbour distance) and b and c are the multiples of a
 ! in their respective directions. Here a and c are for room temp SrFe12O19 from literature
 !a=5.88121_dp
-a=0.56_dp
+a=0.58876_dp
 
 b=1.0_dp
 !c=23.023_dp/a
-c=2.3_dp/a
+c=2.31885_dp/a
 ! Define number of atoms in primitive unit cell n
 ! Found by summing the multiplicities of the atom's wyckoff position
 N_prim=64
@@ -255,9 +255,9 @@ do i=1, N, 1
         x=cell_ortho(1, i)-n_cell_ortho(1, j)
         y=cell_ortho(2, i)-n_cell_ortho(2, j)
         z=cell_ortho(3, i)-n_cell_ortho(3, j)
-        x_int=nint(x*10000)
-        y_int=nint(y*10000)
-        z_int=nint(z*10000)
+        x_int=nint(x*100000)
+        y_int=nint(y*100000)
+        z_int=nint(z*100000)
 
         if (x_int/=0 .or. y_int/=0 .or. z_int/=0) then
             r2=(cell_ortho(1, i)-n_cell_ortho(1, j))**2 + ((cell_ortho(2, i)-n_cell_ortho(2, j))*cos(pi/6.0_dp)*b)**2&
@@ -362,10 +362,11 @@ correct_Fe_d=[0.589_dp, 0.580_dp, 0.346_dp, 0.557_dp, 0.305_dp, 0.580_dp, 0.589_
 ! Printing results
 
 print *, 'Central atom wyckoff, Interacting atom wyckoff, Interaction distance, Number of interactions, Number from Lit,&
-& Relative distance error from Lit'
+& Relative distance error from Lit, Potential U (eV), Exchange Constant J'
 do i=1, size(mag_wyckoff, 2), 1
     print *, wyckoff_id(mag_wyckoff(1, i)), ',', wyckoff_id(mag_wyckoff(2, i)), a*mag_wyckoff(3, i), nint(mag_wyckoff(4, i)),&
-    & correct_nn(i), (a*mag_wyckoff(3, i)-correct_Fe_d(i))/correct_Fe_d(i)
+    & correct_nn(i), (a*mag_wyckoff(3, i)-correct_Fe_d(i))/correct_Fe_d(i), 3.47_dp,&
+    & exchange_J(mag_wyckoff(1, i), mag_wyckoff(2, i), 3.47_dp)
 end do
 
 
@@ -615,5 +616,51 @@ round6=real((nint(long_num * 1000000)) * 0.000001, kind=dp)
 
 return
 end function round6
+
+
+! Function to return the exchange integral value J(meV) for an iron atom pair and repulsion potential U(eV)
+! Values come from Fig 2. and Fig 3. in https://journals.aps.org/prb/pdf/10.1103/PhysRevB.71.184433
+! Then uses a quadratic fit to the data. Only recommended to interpolate between 3.47 and 10.41 eV
+! Points are only actually at 3.47eV, 6.94eV and 10.41eV
+real(kind=dp) function exchange_J(wyckoff_i, wyckoff_j, U)
+real(kind=dp), intent(in) :: wyckoff_i, wyckoff_j, U
+
+character(:), allocatable :: wyck_i, wyck_j
+real(kind=dp) :: a, b, c
+
+wyck_i=trim(wyckoff_id(wyckoff_i))
+wyck_j=trim(wyckoff_id(wyckoff_j))
+
+if ((wyck_i=="2a" .and. wyck_j=="4f1") .or. (wyck_i=="4f1" .and. wyck_j=="2a")) then
+    a=0.056709 ; b=-1.52217 ; c=12.831
+elseif ((wyck_i=="2a" .and. wyck_j=="12k") .or. (wyck_i=="12k" .and. wyck_j=="2a")) then
+    a=0.0524558 ; b=-1.42884 ; c=12.3204
+elseif ((wyck_i=="2b" .and. wyck_j=="4f1") .or. (wyck_i=="4f1" .and. wyck_j=="2b")) then
+    a=0.0496203 ; b=-1.3895 ; c=12.0483
+elseif ((wyck_i=="2b" .and. wyck_j=="4f2") .or. (wyck_i=="4f2" .and. wyck_j=="2b")) then
+    a=0.0311899 ; b=-0.913174 ; c=8.30876
+elseif ((wyck_i=="2b" .and. wyck_j=="12k") .or. (wyck_i=="12k" .and. wyck_j=="2b")) then
+    a=0.0241971 ; b=-0.605029 ; c=4.64307
+elseif ((wyck_i=="4f1" .and. wyck_j=="4f2") .or. (wyck_i=="4f2" .and. wyck_j=="4f1")) then
+    a=0.025519 ; b=-0.579585 ; c=3.72495
+elseif ((wyck_i=="4f1" .and. wyck_j=="12k") .or. (wyck_i=="12k" .and. wyck_j=="4f1")) then
+    a=0.025519 ; b=-0.510957 ; c=2.36747
+elseif ((wyck_i=="4f2" .and. wyck_j=="12k") .or. (wyck_i=="12k" .and. wyck_j=="4f2")) then
+    a=0.00567078 ; b=-0.117902 ; c=0.731472
+elseif (wyck_i=="4f1" .and. wyck_j=="4f1") then
+    a=0.0415904 ; b=-0.931174 ; c=5.86063
+elseif (wyck_i=="4f2" .and. wyck_j=="4f2") then
+    a=0.0148096 ; b=-0.380439 ; c=2.42676
+elseif (wyck_i=="12k" .and. wyck_j=="12k") then
+    a=0.0206911 ; b=-0.375048 ; c=1.79875
+else
+    a=0.0_dp ; b=0.0_dp ; c=0.0_dp
+end if
+
+exchange_J = a*U**2 + b*U + c
+
+return
+
+end function exchange_J
 
 end program BaFeO_hcp

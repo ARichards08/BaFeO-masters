@@ -8,7 +8,7 @@ character(len=40) :: filename, interaction_type
 num_atoms=128
 num_materials=7
 num_interactions=736
-interaction_type=trim("Isotropic")
+interaction_type=trim("isotropic")
 
 ! Writing the .ucf file name to a variable
 filename="BaFeO-test.ucf"

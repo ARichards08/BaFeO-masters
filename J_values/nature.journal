@@ -1,0 +1,27 @@
+#!/bin/bash
+#-------------------------------------------------------------------------------
+#
+#                    Gnuplot style template for Nature
+#
+#                (c) R F L Evans 2016. All rights reserved.
+#
+#-------------------------------------------------------------------------------
+# Set Helvetica font with eps terminal
+set terminal postscript eps enhanced color font "Helvetica" 18
+
+# Set size and ratio
+set size 0.8, 0.8
+set size ratio 0.7
+
+# Set default key choice
+set key top right
+
+# Set outward tics on left axis only
+set tics out nomirror
+
+# Set minor tic marks
+set mxtics 2
+set mytics 2
+
+# Set default style increment
+set style increment user
