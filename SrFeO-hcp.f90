@@ -365,8 +365,9 @@ do i=1, size(mag_wyckoff, 2), 1
 
     ! multiplicity*number of interactions summed gives 508 for just nn
     ! Need to consider some nnn, missing 228
-    interactions=interactions + multiplicity(mag_wyckoff(1, i))*nint(mag_wyckoff(4, i))
-    
+    if(exchange_J(mag_wyckoff(1, i), mag_wyckoff(2, i), 3.47_dp) /= 0.0_dp) then
+        interactions=interactions + multiplicity(mag_wyckoff(1, i))*nint(mag_wyckoff(4, i))
+    end if
 end do
 print *, interactions
 
