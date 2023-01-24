@@ -8,7 +8,7 @@ real(kind=dp), parameter :: pi=4.0_dp*atan(1.0_dp)
 ! either non-orthogonal or orthogonal bases. n_cell and n_cell_ortho are the same but contain 
 ! 27 copies of the basis cell to account for neighbour interactions. distances holds the distances
 
-real(kind=dp), dimension(:, :), allocatable :: atom_data, prim_cell, n_cell, n_cell_ortho, cell, cell_ortho, distances
+real(kind=dp), dimension(:, :), allocatable :: atom_data, prim_cell, n_cell_ortho, cell, cell_ortho, distances
 real(kind=dp), dimension(:, :), allocatable :: Fe_distances, mag_wyckoff
 real(kind=dp), dimension(25) :: correct_Fe_d
 real(kind=dp) :: a, b, c, x, y, z, t, r, r2, atom_i, atom_j, min_r
@@ -17,6 +17,9 @@ integer, dimension(25) :: correct_nn
 integer :: N_prim, N, istat, i, j, k, l, counter, nn, x_prim_mul, y_prim_mul, x_unit, y_unit, prim_in_unit, atom_types
 integer :: failcount, x_int, y_int, z_int, mag_atoms, cell_mag_atoms, mag_atom_types
 
+! File output
+character(:), allocatable :: filename, interaction_type
+integer :: num_materials, interactions
 ! This is a cool hcp sim http://lampx.tugraz.at/~hadley/ss1/crystalstructure/structures/hcp/hcp.php
 
 ! Define lattice constants in orthogonal and non-orthogonal bases
@@ -28,6 +31,7 @@ a=0.58876_dp
 b=1.0_dp
 !c=23.023_dp/a
 c=2.31885_dp/a
+
 ! Define number of atoms in primitive unit cell n
 ! Found by summing the multiplicities of the atom's wyckoff position
 N_prim=64
@@ -56,17 +60,17 @@ if(istat/=0) stop 'Error allocating atom_cell'
 
 ! a, b, c, element_id, material_id, wyckoff_id
 
-atom_data(:, 1) = [1.0_dp/3.0_dp, 2.0_dp/3.0_dp, 3.0_dp/4.0_dp, 1.0_dp, 1.0_dp, 1.0_dp]
-atom_data(:, 2) = [0.0_dp, 0.0_dp, 0.0_dp, 2.0_dp, 2.0_dp, 2.0_dp]
-atom_data(:, 3) = [0.0_dp, 0.0_dp, 1.0_dp/4.0_dp, 3.0_dp, 2.0_dp, 3.0_dp]
-atom_data(:, 4) = [1.0_dp/3.0_dp, 2.0_dp/3.0_dp, 0.02728_dp, 4.0_dp, 2.0_dp, 4.0_dp]
-atom_data(:, 5) = [1.0_dp/3.0_dp, 2.0_dp/3.0_dp, 0.19080_dp, 5.0_dp, 2.0_dp, 5.0_dp]
-atom_data(:, 6) = [0.16878_dp, 2*(0.16878_dp), -0.10921_dp, 6.0_dp, 2.0_dp, 6.0_dp]
-atom_data(:, 7) = [0.0_dp, 0.0_dp, 0.1516_dp, 7.0_dp, 3.0_dp, 7.0_dp]
-atom_data(:, 8) = [1.0_dp/3.0_dp, 2.0_dp/3.0_dp, -0.0552_dp, 8.0_dp, 3.0_dp, 8.0_dp]
-atom_data(:, 9) = [0.1828_dp, 2*(0.1828_dp), 1.0_dp/4.0_dp, 9.0_dp, 3.0_dp, 9.0_dp]
-atom_data(:, 10) = [0.1563_dp, 2*(0.1563_dp), 0.0524_dp, 10.0_dp, 3.0_dp, 6.0_dp]
-atom_data(:, 11) = [0.5051_dp, 2*(0.5051_dp), 0.1510_dp, 11.0_dp, 3.0_dp, 6.0_dp]
+atom_data(:, 1) = [1.0_dp/3.0_dp, 2.0_dp/3.0_dp, 3.0_dp/4.0_dp, 1.0_dp, 2.0_dp, 1.0_dp]
+atom_data(:, 2) = [0.0_dp, 0.0_dp, 0.0_dp, 2.0_dp, 6.0_dp, 2.0_dp]
+atom_data(:, 3) = [0.0_dp, 0.0_dp, 1.0_dp/4.0_dp, 2.0_dp, 7.0_dp, 3.0_dp]
+atom_data(:, 4) = [1.0_dp/3.0_dp, 2.0_dp/3.0_dp, 0.02728_dp, 2.0_dp, 3.0_dp, 4.0_dp]
+atom_data(:, 5) = [1.0_dp/3.0_dp, 2.0_dp/3.0_dp, 0.19080_dp, 2.0_dp, 4.0_dp, 5.0_dp]
+atom_data(:, 6) = [0.16878_dp, 2*(0.16878_dp), -0.10921_dp, 2.0_dp, 5.0_dp, 6.0_dp]
+atom_data(:, 7) = [0.0_dp, 0.0_dp, 0.1516_dp, 3.0_dp, 1.0_dp, 7.0_dp]
+atom_data(:, 8) = [1.0_dp/3.0_dp, 2.0_dp/3.0_dp, -0.0552_dp, 3.0_dp, 1.0_dp, 8.0_dp]
+atom_data(:, 9) = [0.1828_dp, 2*(0.1828_dp), 1.0_dp/4.0_dp, 3.0_dp, 1.0_dp, 9.0_dp]
+atom_data(:, 10) = [0.1563_dp, 2*(0.1563_dp), 0.0524_dp, 3.0_dp, 1.0_dp, 6.0_dp]
+atom_data(:, 11) = [0.5051_dp, 2*(0.5051_dp), 0.1510_dp, 3.0_dp, 1.0_dp, 6.0_dp]
 
 ! From the data, find the number of different element_ids
 ! that have Fe atoms assigned to them, and
@@ -75,11 +79,11 @@ atom_data(:, 11) = [0.5051_dp, 2*(0.5051_dp), 0.1510_dp, 11.0_dp, 3.0_dp, 6.0_dp
 ! mag_wyckoff
 ! 1st column: central atom wyckoff, 2nd column: interacting atom wyckoff
 ! 3rd column: interaction distance, 4th column: number of interactions
-! because every magnetic wyckoff position can interact with all the other including itself in neighbouring cells,
-! mg_wyckoff is 4 x (number of magnetic wyckoff positions)**2 size
+! because every magnetic wyckoff position can interact with all the others including itself in neighbouring cells,
+! mag_wyckoff is 4 x (number of magnetic wyckoff positions)**2 size
 mag_atom_types=0
 do i=1, size(atom_data, 2), 1
-    if (trim(material_id(atom_data(5, i))) == 'Fe') mag_atom_types=mag_atom_types+1
+    if (trim(element_id(atom_data(4, i))) == 'Fe') mag_atom_types=mag_atom_types+1
 end do
 
 allocate (mag_wyckoff(4, mag_atom_types**2), stat=istat)
@@ -89,9 +93,9 @@ mag_wyckoff=0.0_dp
 
 counter=1
 do i=1, size(atom_data, 2), 1
-    if (trim(material_id(atom_data(5, i))) == 'Fe') then
+    if (trim(element_id(atom_data(4, i))) == 'Fe') then
         do j=1, size(atom_data, 2), 1
-            if (trim(material_id(atom_data(5, j))) == 'Fe') then
+            if (trim(element_id(atom_data(4, j))) == 'Fe') then
                 mag_wyckoff(1:2, counter)=[atom_data(6, i), atom_data(6, j)]
                 counter=counter+1 
             end if
@@ -99,11 +103,11 @@ do i=1, size(atom_data, 2), 1
    end if
 end do
 
-! Calculate the number of magnetic atoms in a unit cell using the multiplicity of the magnetic wyckoff positions
+! Calculate the number of magnetic atoms in a primitive unit cell using the multiplicity of the magnetic wyckoff positions
 mag_atoms=0
 
 do i=1, size(atom_data, 2), 1
-    if (trim(material_id(atom_data(5, i))) == 'Fe') then
+    if (trim(element_id(atom_data(4, i))) == 'Fe') then
         mag_atoms = mag_atoms + multiplicity(atom_data(6, i))
     end if
 end do
@@ -111,7 +115,7 @@ end do
 cell_mag_atoms=mag_atoms*prim_in_unit
 
 ! Create primitive cell
-! Contains all the data, plus a specific id for each atom at the end
+! Contains all the non-orthogonal position data, element_id, material_id, wyckoff_id
 allocate (prim_cell(6, N_prim), stat=istat)
 if(istat/=0) stop 'Error allocating prim_cell'
 
@@ -152,6 +156,7 @@ do while (counter > 0)
 end do
 
 ! Create unit cell using multiples of the primitive cell at the origin
+! Same data as atomic 
 allocate (cell(7, N), stat=istat)
 if(istat/=0) stop 'Error allocating cell'
 
@@ -166,7 +171,7 @@ do l=1, N_prim, 1
     end do
 end do
 
-! Put this unit cell into an orthogonal basis
+! Create an array to put the unit cell into orthogonal basis
 allocate (cell_ortho(7, N), stat=istat)
 if(istat/=0) stop 'Error allocating cell_ortho'
 
@@ -186,50 +191,29 @@ do i=1, N, 1
     end if
 end do
 
-! Create the unit with the 26 surrouding identical neighbours, held in n_cell.
-! The surrouing cells are created by copying the initial cell with the corner on the origin,
+! Create the unit with the 26 surrouding identical neighbours, held in n_cell_ortho.
+! The surrounding cells are created by copying the initial cell with the corner on the origin,
 ! and adding or subtracting x_prim_mul or y_prim_mul or -1 or 1 in the z direction
 ! for at least 1 of each of the axes
-! n_cell and n_cell ortho, will hold this information in indices 8-10
-allocate (n_cell(10, N*27), stat=istat)
-if(istat/=0) stop 'Error allocating n_cell'
+! n_cell ortho will hold this information in indices 8-10
+
+allocate (n_cell_ortho(10, N*27), stat=istat)
+if(istat/=0) stop 'Error allocating n_cell_ortho'
 
 counter=1
 do l=1, N, 1
     do i=-x_prim_mul, x_prim_mul, x_prim_mul
         do j=-y_prim_mul, y_prim_mul, y_prim_mul
-            do k=-1, 1, 1 
-                n_cell(:, counter) =[cell(1, l)+real(i, kind=dp), cell(2, l)+real(j, kind=dp), cell(3, l)+real(k, kind=dp)&
-                &, cell(4, l), cell(5, l), cell(6, l), cell(7, l), real(i, kind=dp)/real(x_prim_mul, kind=dp)&
-                &, real(j, kind=dp)/real(y_prim_mul, kind=dp), real(k, kind=dp)]
+            do k=-1, 1, 1
+                n_cell_ortho(:, counter) =[cell_ortho(1, l)+real(i, kind=dp), cell_ortho(2, l)+real(j, kind=dp), cell_ortho(3, l)+&
+                &real(k, kind=dp), cell_ortho(4, l), cell_ortho(5, l), cell_ortho(6, l), cell_ortho(7, l),&
+                & real(i, kind=dp)/real(x_prim_mul, kind=dp), real(j, kind=dp)/real(y_prim_mul, kind=dp), real(k, kind=dp)]
                 counter=counter+1
             end do
         end do
     end do
 end do
 
-! Need to now change to an orthogonal basis
-! Originally set the positions to the same fractions
-
-! Only the x coordinates change, as the change in length in the y dorection doesn't affect the fractional constants.
-! If in non ortho basis an atoms x+ (sin 30)*y > a, need to loop it in ortho basis
-
-! Now do it for the neighbouring cells (27)
-allocate (n_cell_ortho(10, N*27), stat=istat)
-if(istat/=0) stop 'Error allocating n_cell_ortho'
-
-n_cell_ortho=n_cell
-
-do i=1, N*27, 1
-    t=n_cell(1, i) + n_cell(2, i)*sin(pi*7.0_dp/6.0_dp)
-    if (t > 2.0_dp*real(x_prim_mul, kind=dp)) then
-        n_cell_ortho(1, i) = t-3.0_dp*real(x_prim_mul, kind=dp)
-    elseif (t < -real(x_prim_mul, kind=dp)) then
-        n_cell_ortho(1, i) = t+3.0_dp*real(x_prim_mul, kind=dp)
-    else
-        n_cell_ortho(1, i) = t
-    end if
-end do
 
 ! Now need to calculate distances between the atoms.
 
@@ -241,7 +225,7 @@ end do
 ! the interacting atom
 ! Atom_i is the central unit cell atom and atom_j is the interacting atom
 ! Indices 4-5 hold the wyckoff positions for atom i and atom j
-! Indices 6-8 hold the information of which surrrouding cell the interacting atom is in
+! Indices 6-8 hold the information of which surrounding cell the interacting atom is in
 allocate (distances(8, (N)*((N*27)-1)), stat=istat)
 if(istat/=0) stop 'Error allocating distances'
 
@@ -259,6 +243,7 @@ do i=1, N, 1
         y_int=nint(y*100000)
         z_int=nint(z*100000)
 
+        ! To prevent comparing an atom with itself
         if (x_int/=0 .or. y_int/=0 .or. z_int/=0) then
             r2=(cell_ortho(1, i)-n_cell_ortho(1, j))**2 + ((cell_ortho(2, i)-n_cell_ortho(2, j))*cos(pi/6.0_dp)*b)**2&
             & + ((cell_ortho(3, i) - n_cell_ortho(3, j))*c)**2
@@ -284,7 +269,7 @@ end do
 
 allocate (Fe_distances(8, (cell_mag_atoms)*((cell_mag_atoms*27)-1)), stat=istat)
 if(istat/=0) stop 'Error allocating Fe_distances'
-
+Fe_distances=0.0_dp
 k=1
 do i=1, size(distances, 2), 1
     atom_i=distances(2, i)
@@ -293,23 +278,31 @@ do i=1, size(distances, 2), 1
     ! Checks to see if the central atom and the interacting atom are both magnetic (Fe here)
     ! If they both are, counter=2, and the distances can be added to Fe_distances
     counter=0
-    do j=1, size(cell, 2), 1
-        if (trim(material_id(cell(5, j))) == 'Fe') then
-            ! Adds two if both atoms are the same atom_id and Fe
-            if ((cell(7, j) == atom_i) .and. (cell(7, j) == atom_j)) then
-                counter=counter+2
-            ! Adds 1 each time if both atoms are Fe
-            elseif ((cell(7, j) == atom_i) .or. (cell(7, j) == atom_j)) then
+    do j=1, N, 1
+        ! Finds the first atom in the unit cell
+        if (cell(7, j) == atom_i) then
+            ! Checks if it is magnetic
+            if (trim(element_id(cell(4, j))) == 'Fe') then
+                counter=counter+1
+            end if
+        end if
+
+        ! Finds the second atom in the unit cell
+        if (cell(7, j) == atom_j) then
+            ! Checks if it is magnetic
+            if (trim(element_id(cell(4, j))) == 'Fe') then
                 counter=counter+1
             end if
         end if
     end do
 
+    ! If both are magnetic
     if (counter >= 2) then
         Fe_distances(:, k) = distances(:, i)
         k=k+1
     end if
 end do
+
 
 ! For each magnetic wyckoff position, calculate the two shortest distances and save 
 ! the distances and the number of times they occur in mag_wyckoff
@@ -351,6 +344,7 @@ do i=1, size(mag_wyckoff, 2), 1
     ! Saves nn to the mag_wyckoff array
     mag_wyckoff(4, i)=real(nn, kind=dp)
 
+    
 end do
 
 ! Correct values for the nearest enighbour number and the nearest neighbour distances for each type of interaction.
@@ -360,15 +354,74 @@ correct_Fe_d=[0.589_dp, 0.580_dp, 0.346_dp, 0.557_dp, 0.305_dp, 0.580_dp, 0.589_
 & 0.351_dp, 0.291_dp]
 
 ! Printing results
-
+interactions=0
 print *, 'Central atom wyckoff, Interacting atom wyckoff, Interaction distance, Number of interactions, Number from Lit,&
 & Relative distance error from Lit, Potential U (eV), Exchange Constant J'
 do i=1, size(mag_wyckoff, 2), 1
     print *, wyckoff_id(mag_wyckoff(1, i)), ',', wyckoff_id(mag_wyckoff(2, i)), a*mag_wyckoff(3, i), nint(mag_wyckoff(4, i)),&
     & correct_nn(i), (a*mag_wyckoff(3, i)-correct_Fe_d(i))/correct_Fe_d(i), 3.47_dp,&
     & exchange_J(mag_wyckoff(1, i), mag_wyckoff(2, i), 3.47_dp)
+
+
+    ! multiplicity*number of interactions summed gives 508 for just nn
+    ! Need to consider some nnn, missing 228
+    interactions=interactions + multiplicity(mag_wyckoff(1, i))*nint(mag_wyckoff(4, i))
+    
+end do
+print *, interactions
+
+
+! Creating the .ucf file to output
+
+!Specifying constants for the model
+num_materials=7
+interactions=736
+interaction_type=trim("isotropic")
+
+! Writing the .ucf file name to a variable
+filename="SrFeO-test.ucf"
+filename=trim(filename)
+
+! Opening .ucf file
+open (unit=10, file=filename, iostat=istat, status='replace')
+if (istat/=0) stop "Error opening .ucf file" 
+
+! Writing to .ucf file
+
+! Header
+write (unit=10, fmt=*, iostat=istat) "#unit cell size"
+if (istat/=0) stop "Error writing to .ucf file header 1"
+write (unit=10, fmt=*, iostat=istat) a, b, c
+if (istat/=0) stop "Error writing to .ucf file header 2"
+write (unit=10, fmt=*, iostat=istat) "#unit cell vectors"
+if (istat/=0) stop "Error writing to .ucf file header 3"
+write (unit=10, fmt=*, iostat=istat) "1,0,0"
+if (istat/=0) stop "Error writing to .ucf file header 4"
+write (unit=10, fmt=*, iostat=istat) "0,1,0"
+if (istat/=0) stop "Error writing to .ucf file header 5"
+write (unit=10, fmt=*, iostat=istat) "0,0,1"
+if (istat/=0) stop "Error writing to .ucf file header 6"
+
+! Atoms positions
+write (unit=10, fmt=*, iostat=istat) "#Atoms"
+if (istat/=0) stop "Error writing to .ucf file atoms 1"
+write (unit=10, fmt=*, iostat=istat) N, num_materials
+if (istat/=0) stop "Error writing to .ucf file atoms 2"
+
+do i=1, N, 1
+    write (unit=10, fmt=*, iostat=istat) i-1, cell(1:3, i), int(cell(5, i)), 0, 0 
+    if (istat/=0) stop "Error writing to .ucf file atoms 3"
 end do
 
+! Interactions
+write (unit=10, fmt=*, iostat=istat) "#Interactions"
+if (istat/=0) stop "Error writing to .ucf file interactions 1"
+write (unit=10, fmt=*, iostat=istat) interactions, interaction_type
+if (istat/=0) stop "Error writing to .ucf file interactions 2"
+
+! Closing .ucf file
+close (unit=10, iostat=istat)
+if (istat/=0) stop "Error closing .ucf file"
 
 
 ! Deallocate arrays
@@ -382,8 +435,6 @@ deallocate (cell, stat=istat)
 if(istat/=0) stop 'Error deallocating cell'
 deallocate (cell_ortho, stat=istat)
 if(istat/=0) stop 'Error deallocating cell_ortho'
-deallocate (n_cell, stat=istat)
-if(istat/=0) stop 'Error deallocating n_cell'
 deallocate (n_cell_ortho, stat=istat)
 if(istat/=0) stop 'Error deallocating n_cell_ortho'
 deallocate (distances, stat=istat)
@@ -501,48 +552,40 @@ end subroutine data_to_prim
 
 
 ! Function to print a string for an atom's element corresponding to an index
-character(len=3) function element_id(num)
+character(len=2) function element_id(num)
 real(kind=dp) :: num
 
 if (num == 1.0_dp) then
-    element_id='Sr1' 
+    element_id='Sr' 
 elseif (num == 2.0_dp) then
-    element_id='Fe1'
+    element_id='Fe'
 elseif (num == 3.0_dp) then
-    element_id='Fe2'
-elseif (num == 4.0_dp) then
-    element_id='Fe3'
-elseif (num == 5.0_dp) then 
-    element_id='Fe4'
-elseif (num == 6.0_dp) then
-    element_id='Fe5'
-elseif (num == 7.0_dp) then
-    element_id='O1 '
-elseif (num == 8.0_dp) then
-    element_id='O2 '
-elseif (num == 9.0_dp) then
-    element_id='O3 '
-elseif (num == 10.0_dp) then
-    element_id='O4 '
-elseif (num == 11.0_dp) then
-    element_id='O5 '
+    element_id='O '
 else
-    element_id='N/A'
+    element_id='NA'
 end if
 
 return
 end function element_id
 
 ! Function to print a string for an atom's material corresponding to an index
-character(len=2) function material_id(num)
+character(len=3) function material_id(num)
 real(kind=dp) :: num
 
 if (num == 1.0_dp) then
-    material_id='Sr'
+    material_id='O  '
 elseif (num == 2.0_dp) then
-    material_id='Fe'
+    material_id='Sr '
 elseif (num == 3.0_dp) then
-    material_id='O '
+    material_id='Fe3'
+elseif (num == 4.0_dp) then
+    material_id='Fe4'
+elseif (num == 5.0_dp) then
+    material_id='Fe5'
+elseif (num == 6.0_dp) then
+    material_id='Fe1'
+elseif (num == 7.0_dp) then
+    material_id='Fe2'
 else
     material_id='NA'
 end if
