@@ -11,16 +11,19 @@ real(kind=dp), parameter :: pi=4.0_dp*atan(1.0_dp)
 real(kind=dp), dimension(:, :), allocatable :: atom_data, prim_cell, n_cell_ortho, cell, cell_ortho, distances
 real(kind=dp), dimension(:, :), allocatable :: Fe_distances, mag_wyckoff
 real(kind=dp), dimension(25) :: correct_Fe_d
-real(kind=dp) :: a, b, c, x, y, z, t, r, r2, atom_i, atom_j, min_r
+real(kind=dp) :: a, b, c, x, y, z, t, r, r2, atom_i, atom_j, min_r, min_2r, U
 
 integer, dimension(25) :: correct_nn
 integer :: N_prim, N, istat, i, j, k, l, counter, nn, x_prim_mul, y_prim_mul, x_unit, y_unit, prim_in_unit, atom_types
-integer :: failcount, x_int, y_int, z_int, mag_atoms, cell_mag_atoms, mag_atom_types
+integer :: failcount, x_int, y_int, z_int, mag_atoms, cell_mag_atoms, mag_atom_types, nnn
 
 ! File output
 character(:), allocatable :: filename, interaction_type
 integer :: num_materials, interactions
 ! This is a cool hcp sim http://lampx.tugraz.at/~hadley/ss1/crystalstructure/structures/hcp/hcp.php
+
+! Define potential U in eV
+U=3.47_dp
 
 ! Define lattice constants in orthogonal and non-orthogonal bases
 ! a is the characteristic length (nearest neighbour distance) and b and c are the multiples of a
@@ -78,15 +81,16 @@ atom_data(:, 11) = [0.5051_dp, 2*(0.5051_dp), 0.1510_dp, 3.0_dp, 1.0_dp, 6.0_dp]
 
 ! mag_wyckoff
 ! 1st column: central atom wyckoff, 2nd column: interacting atom wyckoff
-! 3rd column: interaction distance, 4th column: number of interactions
+! 3rd column: nn interaction distance, 4th column: nn number of interactions
+! 5th column: nnn interaction distance, 6th column: nnn number of interactions
 ! because every magnetic wyckoff position can interact with all the others including itself in neighbouring cells,
-! mag_wyckoff is 4 x (number of magnetic wyckoff positions)**2 size
+! mag_wyckoff is 6 x (number of magnetic wyckoff positions)**2 size
 mag_atom_types=0
 do i=1, size(atom_data, 2), 1
     if (trim(element_id(atom_data(4, i))) == 'Fe') mag_atom_types=mag_atom_types+1
 end do
 
-allocate (mag_wyckoff(4, mag_atom_types**2), stat=istat)
+allocate (mag_wyckoff(6, mag_atom_types**2), stat=istat)
 if(istat/=0) stop 'Error allocating mag_wyckoff'
 
 mag_wyckoff=0.0_dp
@@ -317,11 +321,11 @@ do i=1, size(mag_wyckoff, 2), 1
             ! If so needs to set this distance as the temporary min_r value   
             if (counter == 0) then
                 min_r=round6(Fe_distances(1, j))
+                counter=counter+1
             else
                 ! Finds min_r for that wyckoff position
                 if (round6(Fe_distances(1, j)) < min_r) min_r=round6(Fe_distances(1, j))
             end if
-            counter=counter+1
         end if
     end do
 
@@ -344,6 +348,43 @@ do i=1, size(mag_wyckoff, 2), 1
     ! Saves nn to the mag_wyckoff array
     mag_wyckoff(4, i)=real(nn, kind=dp)
 
+
+    ! Repeat for nnn
+    counter=0
+    do j=1, size(Fe_distances, 2), 1
+        ! If the distance in Fe_distances is between the sites we are looking at in this loop
+        if ((Fe_distances(4, j) == mag_wyckoff(1, i)) .and. (Fe_distances(5, j) == mag_wyckoff(2, i))) then
+            ! This if statement checks to see if this is the first time the loop has found a distance in the list belonging to i
+            ! If so needs to set this distance as the temporary min_2r value
+            if (counter == 0 .and. round6(Fe_distances(1, j)) > min_r) then
+                min_2r=round6(Fe_distances(1, j))
+                counter=counter+1
+            else
+                ! Finds min_2r for that wyckoff position
+                if (round6(Fe_distances(1, j)) > min_r .and. round6(Fe_distances(1, j)) < min_2r) min_2r=round6(Fe_distances(1, j))
+            end if
+        end if
+    end do
+
+    ! Saves the min_2r value to the mag_wyckoff array
+    mag_wyckoff(5, i)=min_2r
+
+    ! Finds the number of nnn
+    nnn=0
+    do j=1, size(Fe_distances, 2), 1
+        if ((Fe_distances(4, j) == mag_wyckoff(1, i)) .and. (Fe_distances(5, j) == mag_wyckoff(2, i))) then
+            if (round6(Fe_distances(1, j)) == min_2r) nnn=nnn+1
+        end if
+    end do
+
+    ! nn has a lot of double ups, everything is x2 because of the number of primitive cells in a unit cell
+    ! and also the multiplicity of the interacting wyckoff positions
+
+    nnn = nnn / (prim_in_unit * multiplicity(mag_wyckoff(2, i)))
+
+    ! Saves nn to the mag_wyckoff array
+    mag_wyckoff(6, i)=real(nnn, kind=dp)
+
     
 end do
 
@@ -355,19 +396,25 @@ correct_Fe_d=[0.589_dp, 0.580_dp, 0.346_dp, 0.557_dp, 0.305_dp, 0.580_dp, 0.589_
 
 ! Printing results
 interactions=0
+
 print *, 'Central atom wyckoff, Interacting atom wyckoff, Interaction distance, Number of interactions, Number from Lit,&
 & Relative distance error from Lit, Potential U (eV), Exchange Constant J'
+
 do i=1, size(mag_wyckoff, 2), 1
     print *, wyckoff_id(mag_wyckoff(1, i)), ',', wyckoff_id(mag_wyckoff(2, i)), a*mag_wyckoff(3, i), nint(mag_wyckoff(4, i)),&
-    & correct_nn(i), (a*mag_wyckoff(3, i)-correct_Fe_d(i))/correct_Fe_d(i), 3.47_dp,&
-    & exchange_J(mag_wyckoff(1, i), mag_wyckoff(2, i), 3.47_dp)
+    & correct_nn(i), (a*mag_wyckoff(3, i)-correct_Fe_d(i))/correct_Fe_d(i), U,&
+    & exchange_J(mag_wyckoff(1, i), mag_wyckoff(2, i), U, 1), a*mag_wyckoff(5, i), nint(mag_wyckoff(6, i))
 
 
-    ! multiplicity*number of interactions summed gives 508 for just nn
-    ! Need to consider some nnn, missing 228
-    if(exchange_J(mag_wyckoff(1, i), mag_wyckoff(2, i), 3.47_dp) /= 0.0_dp) then
-        interactions=interactions + multiplicity(mag_wyckoff(1, i))*nint(mag_wyckoff(4, i))
-    end if
+    ! Counting interactions of nn and some nnn
+    interactions=interactions + multiplicity(mag_wyckoff(1, i))*nint(mag_wyckoff(4, i))
+
+    if ((trim(wyckoff_id(mag_wyckoff(1, i))) == '4f1' .and. trim(wyckoff_id(mag_wyckoff(2, i))) == '12k') .or. &
+    &(trim(wyckoff_id(mag_wyckoff(1, i))) == '12k' .and. trim(wyckoff_id(mag_wyckoff(2, i))) == '4f1') .or. &
+    &(trim(wyckoff_id(mag_wyckoff(1, i))) == '12k' .and. trim(wyckoff_id(mag_wyckoff(2, i))) == '12k')) then
+        interactions=interactions + multiplicity(mag_wyckoff(1, i))*nint(mag_wyckoff(6, i))
+    end if 
+    
 end do
 print *, interactions
 
@@ -376,7 +423,7 @@ print *, interactions
 
 !Specifying constants for the model
 num_materials=7
-interactions=736
+interactions=1440
 interaction_type=trim("isotropic")
 
 ! Writing the .ucf file name to a variable
@@ -419,6 +466,30 @@ write (unit=10, fmt=*, iostat=istat) "#Interactions"
 if (istat/=0) stop "Error writing to .ucf file interactions 1"
 write (unit=10, fmt=*, iostat=istat) interactions, interaction_type
 if (istat/=0) stop "Error writing to .ucf file interactions 2"
+
+counter=0
+do i=1, size(mag_wyckoff, 2), 1
+    do j=1, size(Fe_distances, 2), 1
+        
+        if ((Fe_distances(4, j) == mag_wyckoff(1, i)) .and. (Fe_distances(5, j) == mag_wyckoff(2, i))) then
+            if (round6(Fe_distances(1, j)) == mag_wyckoff(3, i)) then
+                write (unit=10, fmt=*, iostat=istat) counter, nint(Fe_distances(2:3, j)), nint(Fe_distances(6:8, j)),&
+                & exchange_J(mag_wyckoff(1, i), mag_wyckoff(2, i), U, 1)
+                if (istat/=0) stop "Error writing to .ucf file interactions 3"
+
+                counter=counter+1
+            end if
+
+            if (round6(Fe_distances(1, j)) == mag_wyckoff(5, i)) then
+                write (unit=10, fmt=*, iostat=istat) counter, nint(Fe_distances(2:3, j)), nint(Fe_distances(6:8, j)),&
+                & exchange_J(mag_wyckoff(1, i), mag_wyckoff(2, i), U, 1)
+                if (istat/=0) stop "Error writing to .ucf file interactions 4"
+                counter=counter+1
+            end if
+        end if
+
+    end do
+end do
 
 ! Closing .ucf file
 close (unit=10, iostat=istat)
@@ -666,8 +737,9 @@ end function round6
 ! Values come from Fig 2. and Fig 3. in https://journals.aps.org/prb/pdf/10.1103/PhysRevB.71.184433
 ! Then uses a quadratic fit to the data. Only recommended to interpolate between 3.47 and 10.41 eV
 ! Points are only actually at 3.47eV, 6.94eV and 10.41eV
-real(kind=dp) function exchange_J(wyckoff_i, wyckoff_j, U)
+real(kind=dp) function exchange_J(wyckoff_i, wyckoff_j, U, unit)
 real(kind=dp), intent(in) :: wyckoff_i, wyckoff_j, U
+integer, intent(in) :: unit
 
 character(:), allocatable :: wyck_i, wyck_j
 real(kind=dp) :: a, b, c
@@ -702,6 +774,8 @@ else
 end if
 
 exchange_J = a*U**2 + b*U + c
+
+if (unit == 1) exchange_J = exchange_J * 1.6_dp*10.0_dp**-22.0_dp
 
 return
 
