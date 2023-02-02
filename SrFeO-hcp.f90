@@ -29,11 +29,13 @@ U=3.47_dp
 ! a is the characteristic length (nearest neighbour distance) and b and c are the multiples of a
 ! in their respective directions. Here a and c are for room temp SrFe12O19 from literature
 !a=5.88121_dp
-a=0.58876_dp
+!a=0.58876_dp
+a=5.895_dp
 
-b=1.0_dp
+b=5.895_dp ! non-ortho so same as a
 !c=23.023_dp/a
-c=2.31885_dp/a
+!c=2.31885_dp/a
+c=23.199_dp
 
 ! Define number of atoms in primitive unit cell n
 ! Found by summing the multiplicities of the atom's wyckoff position
@@ -248,8 +250,9 @@ do i=1, N, 1
         z_int=nint(z*100000)
 
         ! To prevent comparing an atom with itself
+        ! Distances are calculated in fractional 
         if (x_int/=0 .or. y_int/=0 .or. z_int/=0) then
-            r2=(cell_ortho(1, i)-n_cell_ortho(1, j))**2 + ((cell_ortho(2, i)-n_cell_ortho(2, j))*cos(pi/6.0_dp)*b)**2&
+            r2=((cell_ortho(1, i)-n_cell_ortho(1, j))*a)**2 + ((cell_ortho(2, i)-n_cell_ortho(2, j))*cos(pi/6.0_dp)*b)**2&
             & + ((cell_ortho(3, i) - n_cell_ortho(3, j))*c)**2
             r=sqrt(r2)
 
@@ -388,7 +391,8 @@ do i=1, size(mag_wyckoff, 2), 1
     
 end do
 
-! Correct values for the nearest enighbour number and the nearest neighbour distances for each type of interaction.
+! Correct values for the nearest neighbour number and the nearest neighbour distances for each type of interaction.
+! Keepin mind that the distances are in nm here
 correct_nn=[6, 2, 3, 3, 1, 2, 6, 3, 3, 1, 6, 6, 3, 1, 2, 6, 6, 1, 1, 2, 6, 6, 6, 6, 2]
 correct_Fe_d=[0.589_dp, 0.580_dp, 0.346_dp, 0.557_dp, 0.305_dp, 0.580_dp, 0.589_dp, 0.619_dp, 0.367_dp, 0.371_dp, 0.346_dp,&
 & 0.619_dp, 0.363_dp, 0.379_dp, 0.350_dp, 0.557_dp, 0.367_dp, 0.379_dp, 0.277_dp, 0.351_dp, 0.305_dp, 0.371_dp, 0.350_dp,&
@@ -397,33 +401,32 @@ correct_Fe_d=[0.589_dp, 0.580_dp, 0.346_dp, 0.557_dp, 0.305_dp, 0.580_dp, 0.589_
 ! Printing results
 interactions=0
 
-print *, 'Central atom wyckoff, Interacting atom wyckoff, Interaction distance, Number of interactions, Number from Lit,&
-& Relative distance error from Lit, Potential U (eV), Exchange Constant J'
+!print *, 'Central atom wyckoff, Interacting atom wyckoff, Interaction distance, Number of interactions, Number from Lit,&
+!& Relative distance error from Lit, Potential U (eV), Exchange Constant J, NNN distance, NNN number'
 
 do i=1, size(mag_wyckoff, 2), 1
-    print *, wyckoff_id(mag_wyckoff(1, i)), ',', wyckoff_id(mag_wyckoff(2, i)), a*mag_wyckoff(3, i), nint(mag_wyckoff(4, i)),&
-    & correct_nn(i), (a*mag_wyckoff(3, i)-correct_Fe_d(i))/correct_Fe_d(i), U,&
-    & exchange_J(mag_wyckoff(1, i), mag_wyckoff(2, i), U, 1), a*mag_wyckoff(5, i), nint(mag_wyckoff(6, i))
+    !print *, wyckoff_id(mag_wyckoff(1, i)), ',', wyckoff_id(mag_wyckoff(2, i)), mag_wyckoff(3, i), nint(mag_wyckoff(4, i)),&
+    !& correct_nn(i), (mag_wyckoff(3, i)-correct_Fe_d(i)*10)/(correct_Fe_d(i)*10), U,&
+    !& exchange_J(mag_wyckoff(1, i), mag_wyckoff(2, i), U, 1), mag_wyckoff(5, i), nint(mag_wyckoff(6, i))
 
 
     ! Counting interactions of nn and some nnn
-    interactions=interactions + multiplicity(mag_wyckoff(1, i))*nint(mag_wyckoff(4, i))
+    interactions=interactions + multiplicity(mag_wyckoff(2, i))*nint(mag_wyckoff(4, i))*prim_in_unit
 
     if ((trim(wyckoff_id(mag_wyckoff(1, i))) == '4f1' .and. trim(wyckoff_id(mag_wyckoff(2, i))) == '12k') .or. &
     &(trim(wyckoff_id(mag_wyckoff(1, i))) == '12k' .and. trim(wyckoff_id(mag_wyckoff(2, i))) == '4f1') .or. &
     &(trim(wyckoff_id(mag_wyckoff(1, i))) == '12k' .and. trim(wyckoff_id(mag_wyckoff(2, i))) == '12k')) then
-        interactions=interactions + multiplicity(mag_wyckoff(1, i))*nint(mag_wyckoff(6, i))
+        interactions=interactions + multiplicity(mag_wyckoff(2, i))*nint(mag_wyckoff(6, i))*prim_in_unit
     end if 
     
 end do
-print *, interactions
+!print *, interactions
 
 
 ! Creating the .ucf file to output
 
 !Specifying constants for the model
 num_materials=7
-interactions=1440
 interaction_type=trim("isotropic")
 
 ! Writing the .ucf file name to a variable
@@ -439,7 +442,7 @@ if (istat/=0) stop "Error opening .ucf file"
 ! Header
 write (unit=10, fmt=*, iostat=istat) "#unit cell size"
 if (istat/=0) stop "Error writing to .ucf file header 1"
-write (unit=10, fmt=*, iostat=istat) a, b, c
+write (unit=10, fmt=*, iostat=istat) a*x_prim_mul, b*cos(pi/6.0_dp)*y_prim_mul, c
 if (istat/=0) stop "Error writing to .ucf file header 2"
 write (unit=10, fmt=*, iostat=istat) "#unit cell vectors"
 if (istat/=0) stop "Error writing to .ucf file header 3"
@@ -457,7 +460,7 @@ write (unit=10, fmt=*, iostat=istat) N, num_materials
 if (istat/=0) stop "Error writing to .ucf file atoms 2"
 
 do i=1, N, 1
-    write (unit=10, fmt=*, iostat=istat) i-1, cell(1:3, i), int(cell(5, i)), 0, 0 
+    write (unit=10, fmt=*, iostat=istat) i-1, cell(1:3, i), cell(5, i), 0, 0 
     if (istat/=0) stop "Error writing to .ucf file atoms 3"
 end do
 
@@ -469,10 +472,14 @@ if (istat/=0) stop "Error writing to .ucf file interactions 2"
 
 counter=0
 do i=1, size(mag_wyckoff, 2), 1
+
     do j=1, size(Fe_distances, 2), 1
         
+        ! If the distance being checked is from the same wyckoff positions being checked
         if ((Fe_distances(4, j) == mag_wyckoff(1, i)) .and. (Fe_distances(5, j) == mag_wyckoff(2, i))) then
+            ! Writing out nearest neighbour interactions
             if (round6(Fe_distances(1, j)) == mag_wyckoff(3, i)) then
+
                 write (unit=10, fmt=*, iostat=istat) counter, nint(Fe_distances(2:3, j)), nint(Fe_distances(6:8, j)),&
                 & exchange_J(mag_wyckoff(1, i), mag_wyckoff(2, i), U, 1)
                 if (istat/=0) stop "Error writing to .ucf file interactions 3"
@@ -480,14 +487,20 @@ do i=1, size(mag_wyckoff, 2), 1
                 counter=counter+1
             end if
 
-            if (round6(Fe_distances(1, j)) == mag_wyckoff(5, i)) then
+            ! Writing out next nearest neighbour interactions
+            if ((round6(Fe_distances(1, j)) == mag_wyckoff(5, i)) .and. &
+                &((trim(wyckoff_id(mag_wyckoff(1, i))) == '4f1' .and. trim(wyckoff_id(mag_wyckoff(2, i))) == '12k') .or. &
+                &(trim(wyckoff_id(mag_wyckoff(1, i))) == '12k' .and. trim(wyckoff_id(mag_wyckoff(2, i))) == '4f1') .or. &
+                &(trim(wyckoff_id(mag_wyckoff(1, i))) == '12k' .and. trim(wyckoff_id(mag_wyckoff(2, i))) == '12k'))) then
+
                 write (unit=10, fmt=*, iostat=istat) counter, nint(Fe_distances(2:3, j)), nint(Fe_distances(6:8, j)),&
                 & exchange_J(mag_wyckoff(1, i), mag_wyckoff(2, i), U, 1)
                 if (istat/=0) stop "Error writing to .ucf file interactions 4"
+
                 counter=counter+1
             end if
         end if
-
+        
     end do
 end do
 
@@ -775,10 +788,13 @@ end if
 
 exchange_J = a*U**2 + b*U + c
 
-if (unit == 1) exchange_J = exchange_J * 1.6_dp*10.0_dp**-22.0_dp
+if (unit == 1) exchange_J = exchange_J * 1.6_dp*10.0_dp**(-22.0_dp)
 
 return
 
 end function exchange_J
+
+
+
 
 end program BaFeO_hcp
