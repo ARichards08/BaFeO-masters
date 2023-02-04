@@ -65,17 +65,17 @@ if(istat/=0) stop 'Error allocating atom_cell'
 
 ! a, b, c, element_id, material_id, wyckoff_id
 
-atom_data(:, 1) = [1.0_dp/3.0_dp, 2.0_dp/3.0_dp, 3.0_dp/4.0_dp, 1.0_dp, 2.0_dp, 1.0_dp]
-atom_data(:, 2) = [0.0_dp, 0.0_dp, 0.0_dp, 2.0_dp, 6.0_dp, 2.0_dp]
-atom_data(:, 3) = [0.0_dp, 0.0_dp, 1.0_dp/4.0_dp, 2.0_dp, 7.0_dp, 3.0_dp]
-atom_data(:, 4) = [1.0_dp/3.0_dp, 2.0_dp/3.0_dp, 0.02728_dp, 2.0_dp, 3.0_dp, 4.0_dp]
-atom_data(:, 5) = [1.0_dp/3.0_dp, 2.0_dp/3.0_dp, 0.19080_dp, 2.0_dp, 4.0_dp, 5.0_dp]
-atom_data(:, 6) = [0.16878_dp, 2*(0.16878_dp), -0.10921_dp, 2.0_dp, 5.0_dp, 6.0_dp]
-atom_data(:, 7) = [0.0_dp, 0.0_dp, 0.1516_dp, 3.0_dp, 1.0_dp, 7.0_dp]
-atom_data(:, 8) = [1.0_dp/3.0_dp, 2.0_dp/3.0_dp, -0.0552_dp, 3.0_dp, 1.0_dp, 8.0_dp]
-atom_data(:, 9) = [0.1828_dp, 2*(0.1828_dp), 1.0_dp/4.0_dp, 3.0_dp, 1.0_dp, 9.0_dp]
-atom_data(:, 10) = [0.1563_dp, 2*(0.1563_dp), 0.0524_dp, 3.0_dp, 1.0_dp, 6.0_dp]
-atom_data(:, 11) = [0.5051_dp, 2*(0.5051_dp), 0.1510_dp, 3.0_dp, 1.0_dp, 6.0_dp]
+atom_data(:, 1) = [1.0_dp/3.0_dp, 2.0_dp/3.0_dp, 3.0_dp/4.0_dp, 1.0_dp, 1.0_dp, 1.0_dp]
+atom_data(:, 2) = [0.0_dp, 0.0_dp, 0.0_dp, 2.0_dp, 5.0_dp, 2.0_dp]
+atom_data(:, 3) = [0.0_dp, 0.0_dp, 1.0_dp/4.0_dp, 2.0_dp, 6.0_dp, 3.0_dp]
+atom_data(:, 4) = [1.0_dp/3.0_dp, 2.0_dp/3.0_dp, 0.02728_dp, 2.0_dp, 2.0_dp, 4.0_dp]
+atom_data(:, 5) = [1.0_dp/3.0_dp, 2.0_dp/3.0_dp, 0.19080_dp, 2.0_dp, 3.0_dp, 5.0_dp]
+atom_data(:, 6) = [0.16878_dp, 2*(0.16878_dp), -0.10921_dp, 2.0_dp, 4.0_dp, 6.0_dp]
+atom_data(:, 7) = [0.0_dp, 0.0_dp, 0.1516_dp, 3.0_dp, 0.0_dp, 7.0_dp]
+atom_data(:, 8) = [1.0_dp/3.0_dp, 2.0_dp/3.0_dp, -0.0552_dp, 3.0_dp, 0.0_dp, 8.0_dp]
+atom_data(:, 9) = [0.1828_dp, 2*(0.1828_dp), 1.0_dp/4.0_dp, 3.0_dp, 0.0_dp, 9.0_dp]
+atom_data(:, 10) = [0.1563_dp, 2*(0.1563_dp), 0.0524_dp, 3.0_dp, 0.0_dp, 6.0_dp]
+atom_data(:, 11) = [0.5051_dp, 2*(0.5051_dp), 0.1510_dp, 3.0_dp, 0.0_dp, 6.0_dp]
 
 ! From the data, find the number of different element_ids
 ! that have Fe atoms assigned to them, and
@@ -460,7 +460,7 @@ write (unit=10, fmt=*, iostat=istat) N, num_materials
 if (istat/=0) stop "Error writing to .ucf file atoms 2"
 
 do i=1, N, 1
-    write (unit=10, fmt=*, iostat=istat) i-1, cell(1:3, i), cell(5, i), 0, 0 
+    write (unit=10, fmt=*, iostat=istat) i-1, cell(1, i)/x_prim_mul, cell(2, i)/y_prim_mul, cell(3, i), cell(5, i), 0, 0 
     if (istat/=0) stop "Error writing to .ucf file atoms 3"
 end do
 
@@ -657,19 +657,19 @@ end function element_id
 character(len=3) function material_id(num)
 real(kind=dp) :: num
 
-if (num == 1.0_dp) then
+if (num == 0.0_dp) then
     material_id='O  '
-elseif (num == 2.0_dp) then
+elseif (num == 1.0_dp) then
     material_id='Sr '
-elseif (num == 3.0_dp) then
+elseif (num == 2.0_dp) then
     material_id='Fe3'
-elseif (num == 4.0_dp) then
+elseif (num == 3.0_dp) then
     material_id='Fe4'
-elseif (num == 5.0_dp) then
+elseif (num == 4.0_dp) then
     material_id='Fe5'
-elseif (num == 6.0_dp) then
+elseif (num == 5.0_dp) then
     material_id='Fe1'
-elseif (num == 7.0_dp) then
+elseif (num == 6.0_dp) then
     material_id='Fe2'
 else
     material_id='NA'
