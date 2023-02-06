@@ -460,7 +460,7 @@ write (unit=10, fmt=*, iostat=istat) N, num_materials
 if (istat/=0) stop "Error writing to .ucf file atoms 2"
 
 do i=1, N, 1
-    write (unit=10, fmt=*, iostat=istat) i-1, cell(1, i)/x_prim_mul, cell(2, i)/y_prim_mul, cell(3, i), cell(5, i), 0, 0 
+    write (unit=10, fmt=*, iostat=istat) i-1, cell(1, i)/x_prim_mul, cell(2, i)/y_prim_mul, cell(3, i), nint(cell(5, i)), 0, 0 
     if (istat/=0) stop "Error writing to .ucf file atoms 3"
 end do
 
@@ -755,40 +755,60 @@ real(kind=dp), intent(in) :: wyckoff_i, wyckoff_j, U
 integer, intent(in) :: unit
 
 character(:), allocatable :: wyck_i, wyck_j
-real(kind=dp) :: a, b, c
+real(kind=dp) :: a, b, c, s
 
 wyck_i=trim(wyckoff_id(wyckoff_i))
 wyck_j=trim(wyckoff_id(wyckoff_j))
 
+! f1=-
+! f2=-
+! k=+
+! a=+
+! b=+
+
 if ((wyck_i=="2a" .and. wyck_j=="4f1") .or. (wyck_i=="4f1" .and. wyck_j=="2a")) then
     a=0.056709 ; b=-1.52217 ; c=12.831
+    s=1.0_dp*(-1.0_dp)
 elseif ((wyck_i=="2a" .and. wyck_j=="12k") .or. (wyck_i=="12k" .and. wyck_j=="2a")) then
     a=0.0524558 ; b=-1.42884 ; c=12.3204
+    s=1.0_dp*1.0_dp
 elseif ((wyck_i=="2b" .and. wyck_j=="4f1") .or. (wyck_i=="4f1" .and. wyck_j=="2b")) then
     a=0.0496203 ; b=-1.3895 ; c=12.0483
+    s=1.0_dp*(-1.0_dp)
 elseif ((wyck_i=="2b" .and. wyck_j=="4f2") .or. (wyck_i=="4f2" .and. wyck_j=="2b")) then
     a=0.0311899 ; b=-0.913174 ; c=8.30876
+    s=1.0_dp*(-1.0_dp)
 elseif ((wyck_i=="2b" .and. wyck_j=="12k") .or. (wyck_i=="12k" .and. wyck_j=="2b")) then
     a=0.0241971 ; b=-0.605029 ; c=4.64307
+    s=1.0_dp*1.0_dp
 elseif ((wyck_i=="4f1" .and. wyck_j=="4f2") .or. (wyck_i=="4f2" .and. wyck_j=="4f1")) then
     a=0.025519 ; b=-0.579585 ; c=3.72495
+    s=(-1.0_dp)*(-1.0_dp)
 elseif ((wyck_i=="4f1" .and. wyck_j=="12k") .or. (wyck_i=="12k" .and. wyck_j=="4f1")) then
     a=0.025519 ; b=-0.510957 ; c=2.36747
+    s=(-1.0_dp)*1.0_dp
 elseif ((wyck_i=="4f2" .and. wyck_j=="12k") .or. (wyck_i=="12k" .and. wyck_j=="4f2")) then
     a=0.00567078 ; b=-0.117902 ; c=0.731472
+    s=(-1.0_dp)*1.0_dp
 elseif (wyck_i=="4f1" .and. wyck_j=="4f1") then
     a=0.0415904 ; b=-0.931174 ; c=5.86063
+    s=(-1.0_dp)*(-1.0_dp)
 elseif (wyck_i=="4f2" .and. wyck_j=="4f2") then
     a=0.0148096 ; b=-0.380439 ; c=2.42676
+    s=(-1.0_dp)*(-1.0_dp)
 elseif (wyck_i=="12k" .and. wyck_j=="12k") then
     a=0.0206911 ; b=-0.375048 ; c=1.79875
+    s=1.0_dp*1.0_dp
 else
     a=0.0_dp ; b=0.0_dp ; c=0.0_dp
+    s=1.0_dp
 end if
 
 exchange_J = a*U**2 + b*U + c
 
 if (unit == 1) exchange_J = exchange_J * 1.6_dp*10.0_dp**(-22.0_dp)
+
+exchange_J=s*exchange_J
 
 return
 
