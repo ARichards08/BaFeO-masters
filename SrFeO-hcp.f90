@@ -760,11 +760,7 @@ real(kind=dp) :: a, b, c, s
 wyck_i=trim(wyckoff_id(wyckoff_i))
 wyck_j=trim(wyckoff_id(wyckoff_j))
 
-! f1=-
-! f2=-
-! k=+
-! a=+
-! b=+
+! f1=-, f2=-, k=+, a=+, b=+
 
 if ((wyck_i=="2a" .and. wyck_j=="4f1") .or. (wyck_i=="4f1" .and. wyck_j=="2a")) then
     a=0.056709 ; b=-1.52217 ; c=12.831
