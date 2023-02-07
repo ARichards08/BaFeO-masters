@@ -1,0 +1,306 @@
+
+
+*******************************************************************************
+Tue Feb  7 11:48:51 2023
+
+
+FIT:    data read from 'J_points.txt' u 1:2
+        format = x:z
+        #datapoints = 4
+        residuals are weighted equally (unit weight)
+
+function used for fitting: f(x)
+	f(x)= a + b*x + c*x**2 + d*x**3
+fitted parameters initialized with current variable values
+
+iter      chisq       delta/lim  lambda   a             b             c             d            
+   0 2.8956666809e+04   0.00e+00  3.67e+01    1.000000e+00   1.000000e+00   1.000000e+00   1.000000e+00
+   9 2.2088105346e-29   0.00e+00  3.67e-08    2.004260e+01  -3.981315e+00   2.589686e-01   2.615845e-03
+
+After 9 iterations the fit converged.
+final sum of squares of residuals : 2.20881e-29
+rel. change during last iteration : 0
+
+
+Exactly as many data points as there are parameters.
+In this degenerate case, all errors are zero by definition.
+
+Final set of parameters 
+======================= 
+
+a               = 20.0426        
+b               = -3.98132       
+c               = 0.258969       
+d               = 0.00261584     
+
+
+*******************************************************************************
+Tue Feb  7 11:48:51 2023
+
+
+FIT:    data read from 'J_points.txt' u 1:2
+        format = x:z
+        #datapoints = 4
+        residuals are weighted equally (unit weight)
+
+function used for fitting: f(x)
+	f(x)= a + b*x + c*x**2 + d*x**3
+fitted parameters initialized with current variable values
+
+iter      chisq       delta/lim  lambda   a             b             c             d            
+   0 2.8956666809e+04   0.00e+00  3.67e+01    1.000000e+00   1.000000e+00   1.000000e+00   1.000000e+00
+   9 2.2088105346e-29   0.00e+00  3.67e-08    2.004260e+01  -3.981315e+00   2.589686e-01   2.615845e-03
+
+After 9 iterations the fit converged.
+final sum of squares of residuals : 2.20881e-29
+rel. change during last iteration : 0
+
+
+Exactly as many data points as there are parameters.
+In this degenerate case, all errors are zero by definition.
+
+Final set of parameters 
+======================= 
+
+a               = 20.0426        
+b               = -3.98132       
+c               = 0.258969       
+d               = 0.00261584     
+
+
+*******************************************************************************
+Tue Feb  7 11:48:51 2023
+
+
+FIT:    data read from 'J_points.txt' u 1:3
+        format = x:z
+        #datapoints = 4
+        residuals are weighted equally (unit weight)
+
+function used for fitting: f(x)
+	f(x)= a + b*x + c*x**2 + d*x**3
+fitted parameters initialized with current variable values
+
+iter      chisq       delta/lim  lambda   a             b             c             d            
+   0 2.8738425069e+04   0.00e+00  3.67e+01    1.000000e+00   1.000000e+00   1.000000e+00   1.000000e+00
+  10 3.1554436209e-30   0.00e+00  3.67e-01    1.654260e+01  -1.859865e+00  -1.098655e-01   2.354260e-02
+
+After 10 iterations the fit converged.
+final sum of squares of residuals : 3.15544e-30
+rel. change during last iteration : 0
+
+
+Exactly as many data points as there are parameters.
+In this degenerate case, all errors are zero by definition.
+
+Final set of parameters 
+======================= 
+
+a               = 16.5426        
+b               = -1.85987       
+c               = -0.109865      
+d               = 0.0235426      
+
+
+*******************************************************************************
+Tue Feb  7 11:48:51 2023
+
+
+FIT:    data read from 'J_points.txt' u 1:4
+        format = x:z
+        #datapoints = 4
+        residuals are weighted equally (unit weight)
+
+function used for fitting: f(x)
+	f(x)= a + b*x + c*x**2 + d*x**3
+fitted parameters initialized with current variable values
+
+iter      chisq       delta/lim  lambda   a             b             c             d            
+   0 2.9528278238e+04   0.00e+00  3.67e+01    1.000000e+00   1.000000e+00   1.000000e+00   1.000000e+00
+   9 0.0000000000e+00  -inf       3.67e-08    1.646413e+01  -4.569880e+00   8.396861e-01  -6.801196e-02
+
+After 9 iterations the fit converged.
+final sum of squares of residuals : 0
+abs. change during last iteration : -7.09975e-30
+
+
+Exactly as many data points as there are parameters.
+In this degenerate case, all errors are zero by definition.
+
+Final set of parameters 
+======================= 
+
+a               = 16.4641        
+b               = -4.56988       
+c               = 0.839686       
+d               = -0.068012      
+
+
+*******************************************************************************
+Tue Feb  7 11:48:51 2023
+
+
+FIT:    data read from 'J_points.txt' u 1:5
+        format = x:z
+        #datapoints = 4
+        residuals are weighted equally (unit weight)
+
+function used for fitting: f(x)
+	f(x)= a + b*x + c*x**2 + d*x**3
+fitted parameters initialized with current variable values
+
+iter      chisq       delta/lim  lambda   a             b             c             d            
+   0 3.0486784512e+04   0.00e+00  3.67e+01    1.000000e+00   1.000000e+00   1.000000e+00   1.000000e+00
+  10 3.9443045261e-30   0.00e+00  3.67e+00    1.674664e+01  -3.667414e+00   1.726457e-01   1.046338e-02
+
+After 10 iterations the fit converged.
+final sum of squares of residuals : 3.9443e-30
+rel. change during last iteration : 0
+
+
+Exactly as many data points as there are parameters.
+In this degenerate case, all errors are zero by definition.
+
+Final set of parameters 
+======================= 
+
+a               = 16.7466        
+b               = -3.66741       
+c               = 0.172646       
+d               = 0.0104634      
+
+
+*******************************************************************************
+Tue Feb  7 11:48:51 2023
+
+
+FIT:    data read from 'J_points.txt' u 1:6
+        format = x:z
+        #datapoints = 4
+        residuals are weighted equally (unit weight)
+
+function used for fitting: f(x)
+	f(x)= a + b*x + c*x**2 + d*x**3
+fitted parameters initialized with current variable values
+
+iter      chisq       delta/lim  lambda   a             b             c             d            
+   0 3.0419604346e+04   0.00e+00  3.67e+01    1.000000e+00   1.000000e+00   1.000000e+00   1.000000e+00
+  19 2.5396587983e-26   0.00e+00  3.67e+01    1.075112e+01  -1.734305e+00   1.020179e-01   1.176776e-13
+
+After 19 iterations the fit converged.
+final sum of squares of residuals : 2.53966e-26
+rel. change during last iteration : 0
+
+
+Exactly as many data points as there are parameters.
+In this degenerate case, all errors are zero by definition.
+
+Final set of parameters 
+======================= 
+
+a               = 10.7511        
+b               = -1.7343        
+c               = 0.102018       
+d               = 1.17678e-13    
+
+
+*******************************************************************************
+Tue Feb  7 11:48:51 2023
+
+
+FIT:    data read from 'J_points.txt' u 1:7
+        format = x:z
+        #datapoints = 4
+        residuals are weighted equally (unit weight)
+
+function used for fitting: f(x)
+	f(x)= a + b*x + c*x**2 + d*x**3
+fitted parameters initialized with current variable values
+
+iter      chisq       delta/lim  lambda   a             b             c             d            
+   0 3.1488147645e+04   0.00e+00  3.67e+01    1.000000e+00   1.000000e+00   1.000000e+00   1.000000e+00
+  11 7.8886090522e-31   0.00e+00  3.67e-10    7.031390e+00  -1.674141e-01  -3.845291e-01   4.970105e-02
+
+After 11 iterations the fit converged.
+final sum of squares of residuals : 7.88861e-31
+abs. change during last iteration : 0
+
+
+Exactly as many data points as there are parameters.
+In this degenerate case, all errors are zero by definition.
+
+Final set of parameters 
+======================= 
+
+a               = 7.03139        
+b               = -0.167414      
+c               = -0.384529      
+d               = 0.049701       
+
+
+*******************************************************************************
+Tue Feb  7 11:48:51 2023
+
+
+FIT:    data read from 'J_points.txt' u 1:8
+        format = x:z
+        #datapoints = 4
+        residuals are weighted equally (unit weight)
+
+function used for fitting: f(x)
+	f(x)= a + b*x + c*x**2 + d*x**3
+fitted parameters initialized with current variable values
+
+iter      chisq       delta/lim  lambda   a             b             c             d            
+   0 3.1456961969e+04   0.00e+00  3.67e+01    1.000000e+00   1.000000e+00   1.000000e+00   1.000000e+00
+   9 2.2088105346e-29   0.00e+00  3.67e-02    1.680942e+01  -1.059940e+01   2.691704e+00  -2.223468e-01
+
+After 9 iterations the fit converged.
+final sum of squares of residuals : 2.20881e-29
+rel. change during last iteration : 0
+
+
+Exactly as many data points as there are parameters.
+In this degenerate case, all errors are zero by definition.
+
+Final set of parameters 
+======================= 
+
+a               = 16.8094        
+b               = -10.5994       
+c               = 2.6917         
+d               = -0.222347      
+
+
+*******************************************************************************
+Tue Feb  7 11:48:51 2023
+
+
+FIT:    data read from 'J_points.txt' u 1:9
+        format = x:z
+        #datapoints = 4
+        residuals are weighted equally (unit weight)
+
+function used for fitting: f(x)
+	f(x)= a + b*x + c*x**2 + d*x**3
+fitted parameters initialized with current variable values
+
+iter      chisq       delta/lim  lambda   a             b             c             d            
+   0 3.2927087318e+04   0.00e+00  3.67e+01    1.000000e+00   1.000000e+00   1.000000e+00   1.000000e+00
+  11 7.8886090522e-31   0.00e+00  3.67e+00    5.775785e+00  -3.259342e+00   7.455157e-01  -6.016442e-02
+
+After 11 iterations the fit converged.
+final sum of squares of residuals : 7.88861e-31
+abs. change during last iteration : 0
+
+
+Exactly as many data points as there are parameters.
+In this degenerate case, all errors are zero by definition.
+
+Final set of parameters 
+======================= 
+
+a               = 5.77578        
+b               = -3.25934       
+c               = 0.745516       
+d               = -0.0601644     
