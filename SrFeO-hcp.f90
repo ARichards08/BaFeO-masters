@@ -3,6 +3,7 @@ implicit none
 
 integer, parameter :: dp=selected_real_kind(15, 300)
 real(kind=dp), parameter :: pi=4.0_dp*atan(1.0_dp)
+character(len=*), parameter :: interaction_fmt="(6I4.1, E15.6E2)"
 
 ! prim_cell is the primitive unit cell. cell and cell_ortho are the regular unit cell we are using in
 ! either non-orthogonal or orthogonal bases. n_cell and n_cell_ortho are the same but contain 
@@ -23,7 +24,7 @@ integer :: num_materials, interactions
 ! This is a cool hcp sim http://lampx.tugraz.at/~hadley/ss1/crystalstructure/structures/hcp/hcp.php
 
 ! Define potential U in eV
-U=3.47_dp
+U=0.0_dp
 
 ! Define lattice constants in orthogonal and non-orthogonal bases
 ! a is the characteristic length (nearest neighbour distance) and b and c are the multiples of a
@@ -480,8 +481,8 @@ do i=1, size(mag_wyckoff, 2), 1
             ! Writing out nearest neighbour interactions
             if (round6(Fe_distances(1, j)) == mag_wyckoff(3, i)) then
 
-                write (unit=10, fmt=*, iostat=istat) counter, nint(Fe_distances(2:3, j)), nint(Fe_distances(6:8, j)),&
-                & exchange_J(mag_wyckoff(1, i), mag_wyckoff(2, i), U, 1)
+                write (unit=10, fmt=interaction_fmt, iostat=istat) counter, nint(Fe_distances(2:3, j)), nint(Fe_distances(6:8, j)),&
+                & exchange_J_Tej_cubic(mag_wyckoff(1, i), mag_wyckoff(2, i), U, 1)
                 if (istat/=0) stop "Error writing to .ucf file interactions 3"
 
                 counter=counter+1
@@ -493,8 +494,8 @@ do i=1, size(mag_wyckoff, 2), 1
                 &(trim(wyckoff_id(mag_wyckoff(1, i))) == '12k' .and. trim(wyckoff_id(mag_wyckoff(2, i))) == '4f1') .or. &
                 &(trim(wyckoff_id(mag_wyckoff(1, i))) == '12k' .and. trim(wyckoff_id(mag_wyckoff(2, i))) == '12k'))) then
 
-                write (unit=10, fmt=*, iostat=istat) counter, nint(Fe_distances(2:3, j)), nint(Fe_distances(6:8, j)),&
-                & exchange_J(mag_wyckoff(1, i), mag_wyckoff(2, i), U, 1)
+                write (unit=10, fmt=interaction_fmt, iostat=istat) counter, nint(Fe_distances(2:3, j)), nint(Fe_distances(6:8, j)),&
+                & exchange_J_Tej_cubic(mag_wyckoff(1, i), mag_wyckoff(2, i), U, 1)
                 if (istat/=0) stop "Error writing to .ucf file interactions 4"
 
                 counter=counter+1
@@ -749,8 +750,8 @@ end function round6
 ! Function to return the exchange integral value J(meV) for an iron atom pair and repulsion potential U(eV)
 ! Values come from Fig 2. and Fig 3. in https://journals.aps.org/prb/pdf/10.1103/PhysRevB.71.184433
 ! Then uses a quadratic fit to the data. Only recommended to interpolate between 3.47 and 10.41 eV
-! Points are only actually at 3.47eV, 6.94eV and 10.41eV
-real(kind=dp) function exchange_J(wyckoff_i, wyckoff_j, U, unit)
+! Points are only actually at U= 3.47eV, 6.94eV and 10.41eV
+real(kind=dp) function exchange_J_Nov(wyckoff_i, wyckoff_j, U, unit)
 real(kind=dp), intent(in) :: wyckoff_i, wyckoff_j, U
 integer, intent(in) :: unit
 
@@ -800,17 +801,76 @@ else
     s=1.0_dp
 end if
 
-exchange_J = a*U**2 + b*U + c
+exchange_J_Nov = a*U**2 + b*U + c
 
-if (unit == 1) exchange_J = exchange_J * 1.6_dp*10.0_dp**(-22.0_dp)
+if (unit == 1) exchange_J_Nov = exchange_J_Nov * 1.6_dp*10.0_dp**(-22.0_dp)
 
-exchange_J=s*exchange_J
+exchange_J_Nov=s*exchange_J_Nov
 
 return
 
-end function exchange_J
+end function exchange_J_Nov
 
 
 
+
+
+! Function to return the exchange integral value J(meV) for an iron atom pair and repulsion potential U(eV)
+! Values come from Fig 4. in https://link.springer.com/content/pdf/10.1038/s41598-021-81028-7.pdf
+! Then uses a cubic fit to the data. Only recommended to interpolate between 2 and 5 eV
+! Points are only actually at U= 2eV, 3eV, 4eV and 5eV
+real(kind=dp) function exchange_J_Tej_cubic(wyckoff_i, wyckoff_j, U, unit)
+real(kind=dp), intent(in) :: wyckoff_i, wyckoff_j, U
+integer, intent(in) :: unit
+
+character(:), allocatable :: wyck_i, wyck_j
+real(kind=dp) :: a, b, c, d, s
+
+wyck_i=trim(wyckoff_id(wyckoff_i))
+wyck_j=trim(wyckoff_id(wyckoff_j))
+
+! f1=-, f2=-, k=+, a=+, b=+
+
+if ((wyck_i=="2a" .and. wyck_j=="4f1") .or. (wyck_i=="4f1" .and. wyck_j=="2a")) then
+    a=16.5426 ; b=-1.85987 ; c=-0.109865 ; d=0.0235426
+    s=1.0_dp*(-1.0_dp)
+elseif ((wyck_i=="2a" .and. wyck_j=="12k") .or. (wyck_i=="12k" .and. wyck_j=="2a")) then
+    a=16.8094 ; b=-10.5994 ; c=2.6917 ; d=-0.222347
+    s=1.0_dp*1.0_dp
+elseif ((wyck_i=="2b" .and. wyck_j=="4f2") .or. (wyck_i=="4f2" .and. wyck_j=="2b")) then
+    a=20.0426 ; b=-3.98132 ; c=0.258969 ; d=0.00261584
+    s=1.0_dp*(-1.0_dp)
+elseif ((wyck_i=="2b" .and. wyck_j=="12k") .or. (wyck_i=="12k" .and. wyck_j=="2b")) then
+    a=10.7511 ; b=-1.7343 ; c=0.102018 ; d=1.17678*10.0**(-13.0)
+    s=1.0_dp*1.0_dp
+elseif ((wyck_i=="4f1" .and. wyck_j=="4f2") .or. (wyck_i=="4f2" .and. wyck_j=="4f1")) then
+    a=7.03139 ; b=-0.167414 ; c=-0.384529 ; d=0.049701
+    s=(-1.0_dp)*(-1.0_dp)
+elseif ((wyck_i=="4f1" .and. wyck_j=="12k") .or. (wyck_i=="12k" .and. wyck_j=="4f1")) then
+    a=16.7466 ; b=-3.66741 ; c=0.172646 ; d=0.0104634
+    s=(-1.0_dp)*1.0_dp
+elseif ((wyck_i=="4f2" .and. wyck_j=="12k") .or. (wyck_i=="12k" .and. wyck_j=="4f2")) then
+    a=20.0426 ; b=-3.98132 ; c=0.258969 ; d=0.00261584
+    s=(-1.0_dp)*1.0_dp
+elseif (wyck_i=="4f1" .and. wyck_j=="4f1") then
+    a=5.77578 ; b=-3.25934 ; c=0.745516 ; d=-0.0601644
+    s=(-1.0_dp)*(-1.0_dp)
+elseif (wyck_i=="12k" .and. wyck_j=="12k") then
+    a=16.4641 ; b=-4.56988 ; c=0.839686 ; d=-0.068012
+    s=1.0_dp*1.0_dp
+else
+    a=0.0_dp ; b=0.0_dp ; c=0.0_dp
+    s=1.0_dp
+end if
+
+exchange_J_Tej_cubic = a + b*U + c*U**2 + d*U**3
+
+if (unit == 1) exchange_J_Tej_cubic = exchange_J_Tej_cubic * 1.6_dp*10.0_dp**(-22.0_dp)
+
+exchange_J_Tej_cubic=s*exchange_J_Tej_cubic
+
+return
+
+end function exchange_J_Tej_cubic
 
 end program BaFeO_hcp
