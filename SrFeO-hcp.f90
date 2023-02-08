@@ -756,7 +756,7 @@ real(kind=dp), intent(in) :: wyckoff_i, wyckoff_j, U
 integer, intent(in) :: unit
 
 character(:), allocatable :: wyck_i, wyck_j
-real(kind=dp) :: a, b, c, s
+real(kind=dp) :: a, b, c
 
 wyck_i=trim(wyckoff_id(wyckoff_i))
 wyck_j=trim(wyckoff_id(wyckoff_j))
@@ -765,43 +765,35 @@ wyck_j=trim(wyckoff_id(wyckoff_j))
 
 if ((wyck_i=="2a" .and. wyck_j=="4f1") .or. (wyck_i=="4f1" .and. wyck_j=="2a")) then
     a=0.056709 ; b=-1.52217 ; c=12.831
-    s=1.0_dp*(-1.0_dp)
 elseif ((wyck_i=="2a" .and. wyck_j=="12k") .or. (wyck_i=="12k" .and. wyck_j=="2a")) then
     a=0.0524558 ; b=-1.42884 ; c=12.3204
-    s=1.0_dp*1.0_dp
 elseif ((wyck_i=="2b" .and. wyck_j=="4f1") .or. (wyck_i=="4f1" .and. wyck_j=="2b")) then
     a=0.0496203 ; b=-1.3895 ; c=12.0483
-    s=1.0_dp*(-1.0_dp)
 elseif ((wyck_i=="2b" .and. wyck_j=="4f2") .or. (wyck_i=="4f2" .and. wyck_j=="2b")) then
     a=0.0311899 ; b=-0.913174 ; c=8.30876
-    s=1.0_dp*(-1.0_dp)
 elseif ((wyck_i=="2b" .and. wyck_j=="12k") .or. (wyck_i=="12k" .and. wyck_j=="2b")) then
     a=0.0241971 ; b=-0.605029 ; c=4.64307
-    s=1.0_dp*1.0_dp
 elseif ((wyck_i=="4f1" .and. wyck_j=="4f2") .or. (wyck_i=="4f2" .and. wyck_j=="4f1")) then
     a=0.025519 ; b=-0.579585 ; c=3.72495
-    s=(-1.0_dp)*(-1.0_dp)
 elseif ((wyck_i=="4f1" .and. wyck_j=="12k") .or. (wyck_i=="12k" .and. wyck_j=="4f1")) then
     a=0.025519 ; b=-0.510957 ; c=2.36747
-    s=(-1.0_dp)*1.0_dp
 elseif ((wyck_i=="4f2" .and. wyck_j=="12k") .or. (wyck_i=="12k" .and. wyck_j=="4f2")) then
     a=0.00567078 ; b=-0.117902 ; c=0.731472
-    s=(-1.0_dp)*1.0_dp
 elseif (wyck_i=="4f1" .and. wyck_j=="4f1") then
     a=0.0415904 ; b=-0.931174 ; c=5.86063
-    s=(-1.0_dp)*(-1.0_dp)
 elseif (wyck_i=="4f2" .and. wyck_j=="4f2") then
     a=0.0148096 ; b=-0.380439 ; c=2.42676
-    s=(-1.0_dp)*(-1.0_dp)
 elseif (wyck_i=="12k" .and. wyck_j=="12k") then
     a=0.0206911 ; b=-0.375048 ; c=1.79875
-    s=1.0_dp*1.0_dp
 else
     a=0.0_dp ; b=0.0_dp ; c=0.0_dp
-    s=1.0_dp
 end if
 
 exchange_J_Nov = a*U**2 + b*U + c
+
+! Incorporate the magnetic moments and a factor of 0.5
+
+exchange_J_Nov = 0.5_dp*exchange_J_Nov*mag_moment(wyck_i, U)*mag_moment(wyck_j, U)
 
 if (unit == 1) exchange_J_Nov = exchange_J_Nov * 1.6_dp*10.0_dp**(-22.0_dp)
 
@@ -811,66 +803,29 @@ return
 
 end function exchange_J_Nov
 
+! Function to return an iron atom's magnetic moment based on their wyckoff position and the Hubbard parameter U
+real(kind=dp) function mag_moment(wyckoff, U)
+character(:), intent(in) :: wyckoff
+real(kind=dp), intent(in) :: U
 
-
-
-
-! Function to return the exchange integral value J(meV) for an iron atom pair and repulsion potential U(eV)
-! Values come from Fig 4. in https://link.springer.com/content/pdf/10.1038/s41598-021-81028-7.pdf
-! Then uses a cubic fit to the data. Only recommended to interpolate between 2 and 5 eV
-! Points are only actually at U= 2eV, 3eV, 4eV and 5eV
-real(kind=dp) function exchange_J_Tej_cubic(wyckoff_i, wyckoff_j, U, unit)
-real(kind=dp), intent(in) :: wyckoff_i, wyckoff_j, U
-integer, intent(in) :: unit
-
-character(:), allocatable :: wyck_i, wyck_j
-real(kind=dp) :: a, b, c, d, s
-
-wyck_i=trim(wyckoff_id(wyckoff_i))
-wyck_j=trim(wyckoff_id(wyckoff_j))
-
-! f1=-, f2=-, k=+, a=+, b=+
-
-if ((wyck_i=="2a" .and. wyck_j=="4f1") .or. (wyck_i=="4f1" .and. wyck_j=="2a")) then
-    a=16.5426 ; b=-1.85987 ; c=-0.109865 ; d=0.0235426
-    s=1.0_dp*(-1.0_dp)
-elseif ((wyck_i=="2a" .and. wyck_j=="12k") .or. (wyck_i=="12k" .and. wyck_j=="2a")) then
-    a=16.8094 ; b=-10.5994 ; c=2.6917 ; d=-0.222347
-    s=1.0_dp*1.0_dp
-elseif ((wyck_i=="2b" .and. wyck_j=="4f2") .or. (wyck_i=="4f2" .and. wyck_j=="2b")) then
-    a=20.0426 ; b=-3.98132 ; c=0.258969 ; d=0.00261584
-    s=1.0_dp*(-1.0_dp)
-elseif ((wyck_i=="2b" .and. wyck_j=="12k") .or. (wyck_i=="12k" .and. wyck_j=="2b")) then
-    a=10.7511 ; b=-1.7343 ; c=0.102018 ; d=1.17678*10.0**(-13.0)
-    s=1.0_dp*1.0_dp
-elseif ((wyck_i=="4f1" .and. wyck_j=="4f2") .or. (wyck_i=="4f2" .and. wyck_j=="4f1")) then
-    a=7.03139 ; b=-0.167414 ; c=-0.384529 ; d=0.049701
-    s=(-1.0_dp)*(-1.0_dp)
-elseif ((wyck_i=="4f1" .and. wyck_j=="12k") .or. (wyck_i=="12k" .and. wyck_j=="4f1")) then
-    a=16.7466 ; b=-3.66741 ; c=0.172646 ; d=0.0104634
-    s=(-1.0_dp)*1.0_dp
-elseif ((wyck_i=="4f2" .and. wyck_j=="12k") .or. (wyck_i=="12k" .and. wyck_j=="4f2")) then
-    a=20.0426 ; b=-3.98132 ; c=0.258969 ; d=0.00261584
-    s=(-1.0_dp)*1.0_dp
-elseif (wyck_i=="4f1" .and. wyck_j=="4f1") then
-    a=5.77578 ; b=-3.25934 ; c=0.745516 ; d=-0.0601644
-    s=(-1.0_dp)*(-1.0_dp)
-elseif (wyck_i=="12k" .and. wyck_j=="12k") then
-    a=16.4641 ; b=-4.56988 ; c=0.839686 ; d=-0.068012
-    s=1.0_dp*1.0_dp
+if (trim(wyckoff)=='2a') then
+    a=3.6765_dp; b=0.108501_dp; c=-0.00436014_dp
+elseif (trim(wyckoff)=='2b') then
+    a=3.486_dp; b=0.12853_dp; c=-0.00498302_dp
+elseif (trim(wyckoff)=='4f1') then
+    a=-3.388_dp; b=-0.155043_dp; c=0.00664402_dp
+elseif (trim(wyckoff)=='4f2') then
+    a=-4.125_dp; b=0.698847_dp; c=0.0186863_dp
+elseif (trim(wyckoff)=='12k') then
+    a=3.6855_dp; b=0.105331_dp; c=-0.00394489_dp
 else
-    a=0.0_dp ; b=0.0_dp ; c=0.0_dp
-    s=1.0_dp
+    a=0.0_dp; b=0.0_dp; c=0.0_dp
 end if
 
-exchange_J_Tej_cubic = a + b*U + c*U**2 + d*U**3
-
-if (unit == 1) exchange_J_Tej_cubic = exchange_J_Tej_cubic * 1.6_dp*10.0_dp**(-22.0_dp)
-
-exchange_J_Tej_cubic=s*exchange_J_Tej_cubic
+mag_moment= a + b*U + c*U**2.0_dp
 
 return
 
-end function exchange_J_Tej_cubic
+end function mag_moment
 
 end program BaFeO_hcp
