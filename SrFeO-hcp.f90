@@ -482,7 +482,7 @@ do i=1, size(mag_wyckoff, 2), 1
             if (round6(Fe_distances(1, j)) == mag_wyckoff(3, i)) then
 
                 write (unit=10, fmt=interaction_fmt, iostat=istat) counter, nint(Fe_distances(2:3, j)), nint(Fe_distances(6:8, j)),&
-                & exchange_J_Tej_cubic(mag_wyckoff(1, i), mag_wyckoff(2, i), U, 1)
+                & exchange_J_Nov(mag_wyckoff(1, i), mag_wyckoff(2, i), U, 1)
                 if (istat/=0) stop "Error writing to .ucf file interactions 3"
 
                 counter=counter+1
@@ -495,7 +495,7 @@ do i=1, size(mag_wyckoff, 2), 1
                 &(trim(wyckoff_id(mag_wyckoff(1, i))) == '12k' .and. trim(wyckoff_id(mag_wyckoff(2, i))) == '12k'))) then
 
                 write (unit=10, fmt=interaction_fmt, iostat=istat) counter, nint(Fe_distances(2:3, j)), nint(Fe_distances(6:8, j)),&
-                & exchange_J_Tej_cubic(mag_wyckoff(1, i), mag_wyckoff(2, i), U, 1)
+                & exchange_J_Nov(mag_wyckoff(1, i), mag_wyckoff(2, i), U, 1)
                 if (istat/=0) stop "Error writing to .ucf file interactions 4"
 
                 counter=counter+1
@@ -797,16 +797,16 @@ exchange_J_Nov = 0.5_dp*exchange_J_Nov*mag_moment(wyck_i, U)*mag_moment(wyck_j, 
 
 if (unit == 1) exchange_J_Nov = exchange_J_Nov * 1.6_dp*10.0_dp**(-22.0_dp)
 
-exchange_J_Nov=s*exchange_J_Nov
-
 return
 
 end function exchange_J_Nov
 
 ! Function to return an iron atom's magnetic moment based on their wyckoff position and the Hubbard parameter U
 real(kind=dp) function mag_moment(wyckoff, U)
-character(:), intent(in) :: wyckoff
 real(kind=dp), intent(in) :: U
+character(:), allocatable, intent(in):: wyckoff
+
+!wyck=trim(wyckoff_id(wyckoff))
 
 if (trim(wyckoff)=='2a') then
     a=3.6765_dp; b=0.108501_dp; c=-0.00436014_dp
