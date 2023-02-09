@@ -815,7 +815,7 @@ elseif (trim(wyckoff)=='2b') then
 elseif (trim(wyckoff)=='4f1') then
     a=-3.388_dp; b=-0.155043_dp; c=0.00664402_dp
 elseif (trim(wyckoff)=='4f2') then
-    a=-4.125_dp; b=0.698847_dp; c=0.0186863_dp
+    a=-3.33_dp; b=-0.181556_dp; c=0.00830503_dp
 elseif (trim(wyckoff)=='12k') then
     a=3.6855_dp; b=0.105331_dp; c=-0.00394489_dp
 else
