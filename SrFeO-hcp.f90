@@ -845,13 +845,13 @@ exchange_J_Tej = a + b*U + c*U**2.0_dp
 
 ! Incorporate the magnetic moments and a factor of 0.5
 
-exchange_J_Nov = 0.5_dp*exchange_J_Nov*mag_moment_Tej(wyck_i, U)*mag_moment_Tej(wyck_j, U)
+exchange_J_Tej = 0.5_dp*exchange_J_Tej*mag_moment_Tej(wyck_i, U)*mag_moment_Tej(wyck_j, U)
 
 if (unit == 1) exchange_J_Tej = exchange_J_Tej * 1.6_dp*10.0_dp**(-22.0_dp)
 
 return
 
-end function exchange_J_Tej_cubic
+end function exchange_J_Tej
 
 ! Function to return an iron atom's magnetic moment based on their wyckoff position and the Hubbard parameter U
 real(kind=dp) function mag_moment_Nov(wyckoff, U)
@@ -899,10 +899,10 @@ else
     a=0.0_dp; b=0.0_dp; c=0.0_dp
 end if
 
-mag_moment= a + b*U + c*U**2.0_dp
+mag_moment_Tej= a + b*U + c*U**2.0_dp
 
 return
 
-end function mag_moment
+end function mag_moment_Tej
 
 end program BaFeO_hcp
