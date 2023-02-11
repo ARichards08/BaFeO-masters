@@ -482,7 +482,7 @@ do i=1, size(mag_wyckoff, 2), 1
             if (round6(Fe_distances(1, j)) == mag_wyckoff(3, i)) then
 
                 write (unit=10, fmt=interaction_fmt, iostat=istat) counter, nint(Fe_distances(2:3, j)), nint(Fe_distances(6:8, j)),&
-                & exchange_J_Nov(mag_wyckoff(1, i), mag_wyckoff(2, i), U, 1)
+                & exchange_J_Tej(mag_wyckoff(1, i), mag_wyckoff(2, i), U, 1)
                 if (istat/=0) stop "Error writing to .ucf file interactions 3"
 
                 counter=counter+1
@@ -495,7 +495,7 @@ do i=1, size(mag_wyckoff, 2), 1
                 &(trim(wyckoff_id(mag_wyckoff(1, i))) == '12k' .and. trim(wyckoff_id(mag_wyckoff(2, i))) == '12k'))) then
 
                 write (unit=10, fmt=interaction_fmt, iostat=istat) counter, nint(Fe_distances(2:3, j)), nint(Fe_distances(6:8, j)),&
-                & exchange_J_Nov(mag_wyckoff(1, i), mag_wyckoff(2, i), U, 1)
+                & exchange_J_Tej(mag_wyckoff(1, i), mag_wyckoff(2, i), U, 1)
                 if (istat/=0) stop "Error writing to .ucf file interactions 4"
 
                 counter=counter+1
@@ -793,7 +793,7 @@ exchange_J_Nov = a*U**2 + b*U + c
 
 ! Incorporate the magnetic moments and a factor of 0.5
 
-exchange_J_Nov = 0.5_dp*exchange_J_Nov*mag_moment(wyck_i, U)*mag_moment(wyck_j, U)
+exchange_J_Nov = 0.5_dp*exchange_J_Nov*mag_moment_Nov(wyck_i, U)*mag_moment_Nov(wyck_j, U)
 
 if (unit == 1) exchange_J_Nov = exchange_J_Nov * 1.6_dp*10.0_dp**(-22.0_dp)
 
@@ -801,12 +801,62 @@ return
 
 end function exchange_J_Nov
 
+
+
+! Function to return the exchange integral value J(meV) for an iron atom pair and repulsion potential U(eV)
+! Values come from Fig 4. in https://link.springer.com/content/pdf/10.1038/s41598-021-81028-7.pdf
+! Then uses a quadratic fit to the data. Only recommended to interpolate between 2 and 5 eV
+! Points are only actually at U= 2eV, 3eV, 4eV and 5eV
+real(kind=dp) function exchange_J_Tej(wyckoff_i, wyckoff_j, U, unit)
+real(kind=dp), intent(in) :: wyckoff_i, wyckoff_j, U
+integer, intent(in) :: unit
+
+character(:), allocatable :: wyck_i, wyck_j
+real(kind=dp) :: a, b, c, d, s
+
+wyck_i=trim(wyckoff_id(wyckoff_i))
+wyck_j=trim(wyckoff_id(wyckoff_j))
+
+! f1=-, f2=-, k=+, a=+, b=+
+
+if ((wyck_i=="2a" .and. wyck_j=="4f1") .or. (wyck_i=="4f1" .and. wyck_j=="2a")) then
+    a=14.0361_dp ; b=-2.20987_dp ; c=0.125561_dp
+elseif ((wyck_i=="2a" .and. wyck_j=="12k") .or. (wyck_i=="12k" .and. wyck_j=="2a")) then
+    a=3.62791_dp ; b=-1.17164_dp ; c=0.113789_dp
+elseif ((wyck_i=="2b" .and. wyck_j=="4f2") .or. (wyck_i=="4f2" .and. wyck_j=="2b")) then
+    a=17.3831_dp ; b=-2.67679_dp ; c=0.137332_dp
+elseif ((wyck_i=="2b" .and. wyck_j=="12k") .or. (wyck_i=="12k" .and. wyck_j=="2b")) then
+    a=8.80572_dp ; b=-1.89204_dp ; c=0.137332_dp
+elseif ((wyck_i=="4f1" .and. wyck_j=="4f2") .or. (wyck_i=="4f2" .and. wyck_j=="4f1")) then
+    a=8.87164_dp ; b=-2.88397_dp ; c=0.357063_dp
+elseif ((wyck_i=="4f1" .and. wyck_j=="12k") .or. (wyck_i=="12k" .and. wyck_j=="4f1")) then
+    a=10.7511_dp ; b=-1.7343_dp ; c=0.102018_dp
+elseif ((wyck_i=="4f2" .and. wyck_j=="12k") .or. (wyck_i=="12k" .and. wyck_j=="4f2")) then
+    a=20.136_dp ; b=-4.07209_dp ; c=0.286435_dp
+elseif (wyck_i=="4f1" .and. wyck_j=="4f1") then
+    a=2.19339_dp ; b=-0.639574_dp ; c=0.0588565_dp
+elseif (wyck_i=="12k" .and. wyck_j=="12k") then
+    a=17.1202_dp ; b=-4.03049_dp ; c=0.282511_dp
+else
+    a=0.0_dp ; b=0.0_dp ; c=0.0_dp
+end if
+
+exchange_J_Tej = a + b*U + c*U**2.0_dp
+
+! Incorporate the magnetic moments and a factor of 0.5
+
+exchange_J_Nov = 0.5_dp*exchange_J_Nov*mag_moment_Tej(wyck_i, U)*mag_moment_Tej(wyck_j, U)
+
+if (unit == 1) exchange_J_Tej = exchange_J_Tej * 1.6_dp*10.0_dp**(-22.0_dp)
+
+return
+
+end function exchange_J_Tej_cubic
+
 ! Function to return an iron atom's magnetic moment based on their wyckoff position and the Hubbard parameter U
-real(kind=dp) function mag_moment(wyckoff, U)
+real(kind=dp) function mag_moment_Nov(wyckoff, U)
 real(kind=dp), intent(in) :: U
 character(:), allocatable, intent(in):: wyckoff
-
-!wyck=trim(wyckoff_id(wyckoff))
 
 if (trim(wyckoff)=='2a') then
     a=3.6765_dp; b=0.108501_dp; c=-0.00436014_dp
@@ -818,6 +868,33 @@ elseif (trim(wyckoff)=='4f2') then
     a=-3.33_dp; b=-0.181556_dp; c=0.00830503_dp
 elseif (trim(wyckoff)=='12k') then
     a=3.6855_dp; b=0.105331_dp; c=-0.00394489_dp
+else
+    a=0.0_dp; b=0.0_dp; c=0.0_dp
+end if
+
+mag_moment_Nov= a + b*U + c*U**2.0_dp
+
+return
+
+end function mag_moment_Nov
+
+
+! Function to return an iron atom's magnetic moment based on their wyckoff position and the Hubbard parameter U
+! Based off of Tej data, Only defined between 0eV and 5eV
+real(kind=dp) function mag_moment_Tej(wyckoff, U)
+real(kind=dp), intent(in) :: U
+character(:), allocatable, intent(in):: wyckoff
+
+if (trim(wyckoff)=='2a') then
+    a=3.94552_dp; b=0.117854_dp; c=-0.00746542_dp
+elseif (trim(wyckoff)=='2b') then
+    a=3.68561_dp; b=0.150722_dp; c=-0.0105912_dp
+elseif (trim(wyckoff)=='4f1') then
+    a=3.73244_dp; b=0.126792_dp; c=-0.00666733_dp
+elseif (trim(wyckoff)=='4f2') then
+    a=3.49567_dp; b=0.25712_dp; c=-0.0216979_dp
+elseif (trim(wyckoff)=='12k') then
+    a=3.88846_dp; b=0.133988_dp; c=-0.0100592_dp
 else
     a=0.0_dp; b=0.0_dp; c=0.0_dp
 end if
