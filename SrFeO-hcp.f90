@@ -482,7 +482,7 @@ do i=1, size(mag_wyckoff, 2), 1
             if (round6(Fe_distances(1, j)) == mag_wyckoff(3, i)) then
 
                 write (unit=10, fmt=interaction_fmt, iostat=istat) counter, nint(Fe_distances(2:3, j)), nint(Fe_distances(6:8, j)),&
-                & exchange_J_Tej(mag_wyckoff(1, i), mag_wyckoff(2, i), U, 1)
+                & exchange_J_Nov(mag_wyckoff(1, i), mag_wyckoff(2, i), U, 1)
                 if (istat/=0) stop "Error writing to .ucf file interactions 3"
 
                 counter=counter+1
@@ -495,7 +495,7 @@ do i=1, size(mag_wyckoff, 2), 1
                 &(trim(wyckoff_id(mag_wyckoff(1, i))) == '12k' .and. trim(wyckoff_id(mag_wyckoff(2, i))) == '12k'))) then
 
                 write (unit=10, fmt=interaction_fmt, iostat=istat) counter, nint(Fe_distances(2:3, j)), nint(Fe_distances(6:8, j)),&
-                & exchange_J_Tej(mag_wyckoff(1, i), mag_wyckoff(2, i), U, 1)
+                & exchange_J_Nov(mag_wyckoff(1, i), mag_wyckoff(2, i), U, 1)
                 if (istat/=0) stop "Error writing to .ucf file interactions 4"
 
                 counter=counter+1
@@ -789,7 +789,7 @@ else
     a=0.0_dp ; b=0.0_dp ; c=0.0_dp
 end if
 
-exchange_J_Nov = a*U**2 + b*U + c
+exchange_J_Nov = a*U**2.0_dp + b*U + c
 
 ! Incorporate the magnetic moments and a factor of 0.5
 
@@ -857,22 +857,29 @@ end function exchange_J_Tej
 real(kind=dp) function mag_moment_Nov(wyckoff, U)
 real(kind=dp), intent(in) :: U
 character(:), allocatable, intent(in):: wyckoff
+real(kind=dp) :: a, b, c, s
 
 if (trim(wyckoff)=='2a') then
     a=3.6765_dp; b=0.108501_dp; c=-0.00436014_dp
+    s=1.0_dp
 elseif (trim(wyckoff)=='2b') then
     a=3.486_dp; b=0.12853_dp; c=-0.00498302_dp
+    s=1.0_dp
 elseif (trim(wyckoff)=='4f1') then
-    a=-3.388_dp; b=-0.155043_dp; c=0.00664402_dp
+    a=3.388_dp; b=0.155043_dp; c=-0.00664402_dp
+    s=-1.0_dp
 elseif (trim(wyckoff)=='4f2') then
-    a=-3.33_dp; b=-0.181556_dp; c=0.00830503_dp
+    a=3.33_dp; b=0.181556_dp; c=-0.00830503_dp
+    s=-1.0_dp
 elseif (trim(wyckoff)=='12k') then
     a=3.6855_dp; b=0.105331_dp; c=-0.00394489_dp
+    s=1.0_dp
 else
     a=0.0_dp; b=0.0_dp; c=0.0_dp
+    s=1.0_dp
 end if
 
-mag_moment_Nov= a + b*U + c*U**2.0_dp
+mag_moment_Nov= s*(a + b*U + c*U**2.0_dp)
 
 return
 
@@ -884,22 +891,29 @@ end function mag_moment_Nov
 real(kind=dp) function mag_moment_Tej(wyckoff, U)
 real(kind=dp), intent(in) :: U
 character(:), allocatable, intent(in):: wyckoff
+real(kind=dp) :: a, b, c, s
 
 if (trim(wyckoff)=='2a') then
     a=3.94552_dp; b=0.117854_dp; c=-0.00746542_dp
+    s=1.0_dp
 elseif (trim(wyckoff)=='2b') then
     a=3.68561_dp; b=0.150722_dp; c=-0.0105912_dp
+    s=1.0_dp
 elseif (trim(wyckoff)=='4f1') then
     a=3.73244_dp; b=0.126792_dp; c=-0.00666733_dp
+    s=-1.0_dp
 elseif (trim(wyckoff)=='4f2') then
     a=3.49567_dp; b=0.25712_dp; c=-0.0216979_dp
+    s=-1.0_dp
 elseif (trim(wyckoff)=='12k') then
     a=3.88846_dp; b=0.133988_dp; c=-0.0100592_dp
+    s=1.0_dp
 else
     a=0.0_dp; b=0.0_dp; c=0.0_dp
+    s=1.0_dp
 end if
 
-mag_moment_Tej= a + b*U + c*U**2.0_dp
+mag_moment_Tej= s*(a + b*U + c*U**2.0_dp)
 
 return
 
