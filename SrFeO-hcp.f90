@@ -412,7 +412,17 @@ do i=1, size(mag_wyckoff, 2), 1
 
 
     ! Counting interactions of nn and some nnn
-    interactions=interactions + multiplicity(mag_wyckoff(2, i))*nint(mag_wyckoff(4, i))*prim_in_unit
+    ! Discoutning some combinations
+    if ((trim(wyckoff_id(mag_wyckoff(1, i))) == '2a' .and. trim(wyckoff_id(mag_wyckoff(2, i))) == '2b') .or. &
+    &(trim(wyckoff_id(mag_wyckoff(1, i))) == '2b' .and. trim(wyckoff_id(mag_wyckoff(2, i))) == '2a') .or. &
+    &(trim(wyckoff_id(mag_wyckoff(1, i))) == '2a' .and. trim(wyckoff_id(mag_wyckoff(2, i))) == '4f2') .or. &
+    &(trim(wyckoff_id(mag_wyckoff(1, i))) == '4f2' .and. trim(wyckoff_id(mag_wyckoff(2, i))) == '2a') .or. &
+    &(trim(wyckoff_id(mag_wyckoff(1, i))) == '2a' .and. trim(wyckoff_id(mag_wyckoff(2, i))) == '2a') .or. &
+    &(trim(wyckoff_id(mag_wyckoff(1, i))) == '2b' .and. trim(wyckoff_id(mag_wyckoff(2, i))) == '2b')) then
+        continue
+    else
+        interactions=interactions + multiplicity(mag_wyckoff(2, i))*nint(mag_wyckoff(4, i))*prim_in_unit
+    end if
 
     if ((trim(wyckoff_id(mag_wyckoff(1, i))) == '4f1' .and. trim(wyckoff_id(mag_wyckoff(2, i))) == '12k') .or. &
     &(trim(wyckoff_id(mag_wyckoff(1, i))) == '12k' .and. trim(wyckoff_id(mag_wyckoff(2, i))) == '4f1') .or. &
@@ -481,12 +491,14 @@ do i=1, size(mag_wyckoff, 2), 1
         if ((Fe_distances(4, j) == mag_wyckoff(1, i)) .and. (Fe_distances(5, j) == mag_wyckoff(2, i))) then
             ! Writing out nearest neighbour interactions
             if (round6(Fe_distances(1, j)) == mag_wyckoff(3, i)) then
+                ! Check if interaction is 0 before printing
+                if (exchange_J_Nov(mag_wyckoff(1, i), mag_wyckoff(2, i), U, 1) /= 0) then
+                    write (unit=10, fmt=interaction_fmt, iostat=istat) counter, nint(Fe_distances(2:3, j)),&
+                    & nint(Fe_distances(6:8, j)), exchange_J_Nov(mag_wyckoff(1, i), mag_wyckoff(2, i), U, 1)
+                    if (istat/=0) stop "Error writing to .ucf file interactions 3"
 
-                write (unit=10, fmt=interaction_fmt, iostat=istat) counter, nint(Fe_distances(2:3, j)), nint(Fe_distances(6:8, j)),&
-                & exchange_J_Nov(mag_wyckoff(1, i), mag_wyckoff(2, i), U, 1)
-                if (istat/=0) stop "Error writing to .ucf file interactions 3"
-
-                counter=counter+1
+                    counter=counter+1
+                end if
             end if
 
             ! Writing out next nearest neighbour interactions
@@ -495,11 +507,14 @@ do i=1, size(mag_wyckoff, 2), 1
                 &(trim(wyckoff_id(mag_wyckoff(1, i))) == '12k' .and. trim(wyckoff_id(mag_wyckoff(2, i))) == '4f1') .or. &
                 &(trim(wyckoff_id(mag_wyckoff(1, i))) == '12k' .and. trim(wyckoff_id(mag_wyckoff(2, i))) == '12k'))) then
 
-                write (unit=10, fmt=interaction_fmt, iostat=istat) counter, nint(Fe_distances(2:3, j)), nint(Fe_distances(6:8, j)),&
-                & exchange_J_Nov(mag_wyckoff(1, i), mag_wyckoff(2, i), U, 1)
-                if (istat/=0) stop "Error writing to .ucf file interactions 4"
+                ! Check if interaction is 0 before printing
+                if (exchange_J_Nov(mag_wyckoff(1, i), mag_wyckoff(2, i), U, 1) /= 0) then
+                    write (unit=10, fmt=interaction_fmt, iostat=istat) counter, nint(Fe_distances(2:3, j)),&
+                    & nint(Fe_distances(6:8, j)), exchange_J_Nov(mag_wyckoff(1, i), mag_wyckoff(2, i), U, 1)
+                    if (istat/=0) stop "Error writing to .ucf file interactions 4"
 
-                counter=counter+1
+                    counter=counter+1
+                end if
             end if
         end if
         
