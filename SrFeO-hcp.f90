@@ -172,7 +172,7 @@ do l=1, N_prim, 1
     do x_unit=0, x_prim_mul-1, 1
         do y_unit=0, y_prim_mul-1, 1
             cell(:, counter)=[prim_cell(1, l)+real(x_unit, kind=dp), prim_cell(2, l)+real(y_unit, kind=dp), prim_cell(3, l)&
-            &, prim_cell(4, l), prim_cell(5, l), prim_cell(6, l), real(counter, kind=dp)]
+            &, prim_cell(4, l), prim_cell(5, l), prim_cell(6, l), real(counter-1, kind=dp)]
             counter=counter+1
         end do
     end do
@@ -461,7 +461,8 @@ write (unit=10, fmt=*, iostat=istat) N, num_materials
 if (istat/=0) stop "Error writing to .ucf file atoms 2"
 
 do i=1, N, 1
-    write (unit=10, fmt=*, iostat=istat) i-1, cell(1, i)/x_prim_mul, cell(2, i)/y_prim_mul, cell(3, i), nint(cell(5, i)), 0, 0 
+    write (unit=10, fmt=*, iostat=istat) nint(cell_ortho(7, i)), cell_ortho(1, i)/x_prim_mul, cell_ortho(2, i)/y_prim_mul,&
+    & cell_ortho(3, i), nint(cell_ortho(5, i)), 0, 0 
     if (istat/=0) stop "Error writing to .ucf file atoms 3"
 end do
 
