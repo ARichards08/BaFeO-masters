@@ -19,8 +19,11 @@ integer :: N_prim, N, istat, i, j, k, l, counter, nn, x_prim_mul, y_prim_mul, x_
 integer :: failcount, x_int, y_int, z_int, mag_atoms, cell_mag_atoms, mag_atom_types, nnn
 
 ! File output
-character(:), allocatable :: filename, interaction_type
+character(:), allocatable :: ucf_fname, mat_fname, interaction_type, num_char, mag_mo_char
+character(len=132), dimension(:, :), allocatable :: mat_array
+character(len=132) :: tnum, tnum2
 integer :: num_materials, interactions
+
 ! This is a cool hcp sim http://lampx.tugraz.at/~hadley/ss1/crystalstructure/structures/hcp/hcp.php
 
 ! Define potential U in eV
@@ -66,17 +69,17 @@ if(istat/=0) stop 'Error allocating atom_cell'
 
 ! a, b, c, element_id, material_id, wyckoff_id
 
-atom_data(:, 1) = [1.0_dp/3.0_dp, 2.0_dp/3.0_dp, 3.0_dp/4.0_dp, 1.0_dp, 1.0_dp, 1.0_dp]
-atom_data(:, 2) = [0.0_dp, 0.0_dp, 0.0_dp, 2.0_dp, 5.0_dp, 2.0_dp]
-atom_data(:, 3) = [0.0_dp, 0.0_dp, 1.0_dp/4.0_dp, 2.0_dp, 6.0_dp, 3.0_dp]
+atom_data(:, 1) = [1.0_dp/3.0_dp, 2.0_dp/3.0_dp, 3.0_dp/4.0_dp, 1.0_dp, 5.0_dp, 1.0_dp]
+atom_data(:, 2) = [0.0_dp, 0.0_dp, 0.0_dp, 2.0_dp, 0.0_dp, 2.0_dp]
+atom_data(:, 3) = [0.0_dp, 0.0_dp, 1.0_dp/4.0_dp, 2.0_dp, 1.0_dp, 3.0_dp]
 atom_data(:, 4) = [1.0_dp/3.0_dp, 2.0_dp/3.0_dp, 0.02728_dp, 2.0_dp, 2.0_dp, 4.0_dp]
 atom_data(:, 5) = [1.0_dp/3.0_dp, 2.0_dp/3.0_dp, 0.19080_dp, 2.0_dp, 3.0_dp, 5.0_dp]
 atom_data(:, 6) = [0.16878_dp, 2*(0.16878_dp), -0.10921_dp, 2.0_dp, 4.0_dp, 6.0_dp]
-atom_data(:, 7) = [0.0_dp, 0.0_dp, 0.1516_dp, 3.0_dp, 0.0_dp, 7.0_dp]
-atom_data(:, 8) = [1.0_dp/3.0_dp, 2.0_dp/3.0_dp, -0.0552_dp, 3.0_dp, 0.0_dp, 8.0_dp]
-atom_data(:, 9) = [0.1828_dp, 2*(0.1828_dp), 1.0_dp/4.0_dp, 3.0_dp, 0.0_dp, 9.0_dp]
-atom_data(:, 10) = [0.1563_dp, 2*(0.1563_dp), 0.0524_dp, 3.0_dp, 0.0_dp, 6.0_dp]
-atom_data(:, 11) = [0.5051_dp, 2*(0.5051_dp), 0.1510_dp, 3.0_dp, 0.0_dp, 6.0_dp]
+atom_data(:, 7) = [0.0_dp, 0.0_dp, 0.1516_dp, 3.0_dp, 6.0_dp, 7.0_dp]
+atom_data(:, 8) = [1.0_dp/3.0_dp, 2.0_dp/3.0_dp, -0.0552_dp, 3.0_dp, 6.0_dp, 8.0_dp]
+atom_data(:, 9) = [0.1828_dp, 2*(0.1828_dp), 1.0_dp/4.0_dp, 3.0_dp, 6.0_dp, 9.0_dp]
+atom_data(:, 10) = [0.1563_dp, 2*(0.1563_dp), 0.0524_dp, 3.0_dp, 6.0_dp, 6.0_dp]
+atom_data(:, 11) = [0.5051_dp, 2*(0.5051_dp), 0.1510_dp, 3.0_dp, 6.0_dp, 6.0_dp]
 
 ! From the data, find the number of different element_ids
 ! that have Fe atoms assigned to them, and
@@ -441,11 +444,11 @@ num_materials=7
 interaction_type=trim("isotropic")
 
 ! Writing the .ucf file name to a variable
-filename="SrFeO-test.ucf"
-filename=trim(filename)
+ucf_fname="SrFeO-test.ucf"
+ucf_fname=trim(ucf_fname)
 
 ! Opening .ucf file
-open (unit=10, file=filename, iostat=istat, status='replace')
+open (unit=10, file=ucf_fname, iostat=istat, status='replace')
 if (istat/=0) stop "Error opening .ucf file" 
 
 ! Writing to .ucf file
@@ -526,6 +529,86 @@ close (unit=10, iostat=istat)
 if (istat/=0) stop "Error closing .ucf file"
 
 
+
+! Creating the material file
+
+! Writing the .mat file name to a variable
+mat_fname="SrFeO-test.mat"
+mat_fname=trim(mat_fname)
+
+! Opening .ucf file
+open (unit=20, file=mat_fname, iostat=istat, status='replace')
+if (istat/=0) stop "Error opening .mat file"
+
+! Writing to .ucf file
+
+! Header
+write(tnum, *) num_materials
+num_char=trim(adjustl(tnum))
+
+write (unit=20, fmt=*, iostat=istat) "material:num-materials=", num_char
+if (istat/=0) stop "Error writing to .mat file header"
+
+! Material array
+! Start with magnetic atoms
+! First is names, second is wyckoff positions for the magnetic atoms
+
+allocate (mat_array(num_materials, 2), stat=istat)
+if(istat/=0) stop 'Error allocating mat_names_array'
+
+mat_array(:5, 1)=["4f1", "4f2", "12k", "2a ", "2b "]
+mat_array(:, 2)=["f1", "g2", "k ", "a ", "b ", "Ba", "O "]
+
+! Write magnetic atom information
+do i=1, mag_atom_types, 1
+    write(tnum, *) i
+    num_char=trim(adjustl(tnum))
+
+    write(tnum2, *) mag_moment_Nov(trim(mat_array(i, 1)), U)
+    mag_mo_char=trim(adjustl(tnum2))
+
+    write (unit=20, fmt=*, iostat=istat) "material["//num_char//"]:material-name="//trim(mat_array(i, 2)) 
+    if (istat/=0) stop "Error writing to .mat file 1"
+    write (unit=20, fmt=*, iostat=istat) "material["//num_char//"]:material-element="//trim(mat_array(i, 2))
+    if (istat/=0) stop "Error writing to .mat file 2"
+    write (unit=20, fmt=*, iostat=istat) "material["//num_char//"]:damping-constant=1.0"
+    if (istat/=0) stop "Error writing to .mat file 3"
+    write (unit=20, fmt=*, iostat=istat) "material["//num_char//"]:atomic-spin-moment="//mag_mo_char//"!muB" 
+    if (istat/=0) stop "Error writing to .mat file 4"
+    write (unit=20, fmt=*, iostat=istat) "material["//num_char//"]:unit-cell-category="//num_char
+    if (istat/=0) stop "Error writing to .mat file 5"
+    write (unit=20, fmt=*, iostat=istat) "material["//num_char//"]:initial-spin-direction=random"
+    if (istat/=0) stop "Error writing to .mat file 6"
+    write (unit=20, fmt=*, iostat=istat) "material["//num_char//"]:uniaxial-anisotropy-constant=1e-23"
+    if (istat/=0) stop "Error writing to .mat file 7"
+    write (unit=20, fmt=*, iostat=istat) ""
+    if (istat/=0) stop "Error writing to .mat file 8"
+end do
+
+! Write non-magnetic atom information
+do i=mag_atom_types+1, num_materials, 1
+    write(tnum, *) i
+    num_char=trim(adjustl(tnum))
+
+    write (unit=20, fmt=*, iostat=istat) "material["//num_char//"]:material-name="//mat_array(i, 2)
+    if (istat/=0) stop "Error writing to .mat file non mag 1"
+    write (unit=20, fmt=*, iostat=istat) "material["//num_char//"]:material-element="//mat_array(i, 2)
+    if (istat/=0) stop "Error writing to .mat file non mag 2"
+    write (unit=20, fmt=*, iostat=istat) "material["//num_char//"]:damping-constant=1.0"
+    if (istat/=0) stop "Error writing to .mat file non mag 3"
+    write (unit=20, fmt=*, iostat=istat) "material["//num_char//"]:unit-cell-category="//num_char
+    if (istat/=0) stop "Error writing to .mat file non mag 4"
+    write (unit=20, fmt=*, iostat=istat) "material["//num_char//"]:non-magnetic=keep"
+    if (istat/=0) stop "Error writing to .mat file non mag 5"
+    write (unit=20, fmt=*, iostat=istat) ""
+    if (istat/=0) stop "Error writing to .mat file non mag 6"
+end do
+
+! Closing .mat file
+close (unit=20, iostat=istat)
+if (istat/=0) stop "Error closing .mat file"
+
+
 ! Deallocate arrays
 deallocate (atom_data, stat=istat)
 if(istat/=0) stop 'Error deallocating atom_data'
@@ -543,7 +626,8 @@ deallocate (distances, stat=istat)
 if(istat/=0) stop 'Error deallocating distances'
 deallocate (Fe_distances, stat=istat)
 if(istat/=0) stop 'Error deallocating Fe_distances'
-
+deallocate (mat_array, stat=istat)
+if(istat/=0) stop 'Error deallocating mat_array'
 ! Subroutines and functions
 contains
 
@@ -675,9 +759,9 @@ character(len=3) function material_id(num)
 real(kind=dp) :: num
 
 if (num == 0.0_dp) then
-    material_id='O  '
+    material_id='Fe1'
 elseif (num == 1.0_dp) then
-    material_id='Sr '
+    material_id='Fe2'
 elseif (num == 2.0_dp) then
     material_id='Fe3'
 elseif (num == 3.0_dp) then
@@ -685,11 +769,11 @@ elseif (num == 3.0_dp) then
 elseif (num == 4.0_dp) then
     material_id='Fe5'
 elseif (num == 5.0_dp) then
-    material_id='Fe1'
+    material_id='Sr '
 elseif (num == 6.0_dp) then
-    material_id='Fe2'
+    material_id='O'
 else
-    material_id='NA'
+    material_id='N/A'
 end if
 
 return
@@ -828,7 +912,7 @@ real(kind=dp), intent(in) :: wyckoff_i, wyckoff_j, U
 integer, intent(in) :: unit
 
 character(:), allocatable :: wyck_i, wyck_j
-real(kind=dp) :: a, b, c, d, s
+real(kind=dp) :: a, b, c
 
 wyck_i=trim(wyckoff_id(wyckoff_i))
 wyck_j=trim(wyckoff_id(wyckoff_j))
@@ -872,7 +956,7 @@ end function exchange_J_Tej
 ! Function to return an iron atom's magnetic moment based on their wyckoff position and the Hubbard parameter U
 real(kind=dp) function mag_moment_Nov(wyckoff, U)
 real(kind=dp), intent(in) :: U
-character(:), allocatable, intent(in):: wyckoff
+character(len=*), intent(in):: wyckoff
 real(kind=dp) :: a, b, c, s
 
 if (trim(wyckoff)=='2a') then

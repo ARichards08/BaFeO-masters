@@ -1,5 +1,6 @@
 
 *.exe
 *.ucf
+*.mat
 *.json
 *.png
