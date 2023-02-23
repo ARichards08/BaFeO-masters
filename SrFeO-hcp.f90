@@ -19,16 +19,20 @@ integer :: N_prim, N, istat, i, j, k, l, counter, nn, x_prim_mul, y_prim_mul, x_
 integer :: failcount, x_int, y_int, z_int, mag_atoms, cell_mag_atoms, mag_atom_types, nnn
 
 ! File output
-character(:), allocatable :: ucf_fname, mat_fname, interaction_type, num_char, mag_mo_char
+character(:), allocatable :: fname, ucf_fname, mat_fname, interaction_type, num_char, mag_mo_char
 character(len=132), dimension(:, :), allocatable :: mat_array
 character(len=132) :: tnum, tnum2
 integer :: num_materials, interactions
+integer, dimension(:, :), allocatable :: int_out
+real(kind=dp), dimension(:), allocatable :: exchange_out
 
-! This is a cool hcp sim http://lampx.tugraz.at/~hadley/ss1/crystalstructure/structures/hcp/hcp.php
+! Visualisation of the hcp unit cell http://lampx.tugraz.at/~hadley/ss1/crystalstructure/structures/hcp/hcp.php
 
 ! Define potential U in eV
 U=0.0_dp
 
+! ucf and mat file name
+fname="SrFeO-test"
 ! Define lattice constants in orthogonal and non-orthogonal bases
 ! a is the characteristic length (nearest neighbour distance) and b and c are the multiples of a
 ! in their respective directions. Here a and c are for room temp SrFe12O19 from literature
@@ -413,7 +417,6 @@ do i=1, size(mag_wyckoff, 2), 1
     !& correct_nn(i), (mag_wyckoff(3, i)-correct_Fe_d(i)*10)/(correct_Fe_d(i)*10), U,&
     !& exchange_J(mag_wyckoff(1, i), mag_wyckoff(2, i), U, 1), mag_wyckoff(5, i), nint(mag_wyckoff(6, i))
 
-
     ! Counting interactions of nn and some nnn
     ! Discoutning some combinations
     if ((trim(wyckoff_id(mag_wyckoff(1, i))) == '2a' .and. trim(wyckoff_id(mag_wyckoff(2, i))) == '2b') .or. &
@@ -436,6 +439,11 @@ do i=1, size(mag_wyckoff, 2), 1
 end do
 !print *, interactions
 
+! Allocate arrays for output
+allocate (int_out(5, interactions), stat=istat)
+if(istat/=0) stop 'Error allocating int_out'
+allocate (exchange_out(interactions), stat=istat)
+if(istat/=0) stop 'Error allocating exchange_out'
 
 ! Creating the .ucf file to output
 
@@ -444,8 +452,7 @@ num_materials=7
 interaction_type=trim("isotropic")
 
 ! Writing the .ucf file name to a variable
-ucf_fname="SrFeO-test.ucf"
-ucf_fname=trim(ucf_fname)
+ucf_fname=trim(fname//".ucf")
 
 ! Opening .ucf file
 open (unit=10, file=ucf_fname, iostat=istat, status='replace')
@@ -485,6 +492,7 @@ if (istat/=0) stop "Error writing to .ucf file interactions 1"
 write (unit=10, fmt=*, iostat=istat) interactions, interaction_type
 if (istat/=0) stop "Error writing to .ucf file interactions 2"
 
+! Saving the output data to arrays to be sorted before being written to a file
 counter=0
 do i=1, size(mag_wyckoff, 2), 1
 
@@ -496,9 +504,9 @@ do i=1, size(mag_wyckoff, 2), 1
             if (round6(Fe_distances(1, j)) == mag_wyckoff(3, i)) then
                 ! Check if interaction is 0 before printing
                 if (exchange_J_Nov(mag_wyckoff(1, i), mag_wyckoff(2, i), U, 1) /= 0) then
-                    write (unit=10, fmt=interaction_fmt, iostat=istat) counter, nint(Fe_distances(2:3, j)),&
-                    & nint(Fe_distances(6:8, j)), exchange_J_Nov(mag_wyckoff(1, i), mag_wyckoff(2, i), U, 1)
-                    if (istat/=0) stop "Error writing to .ucf file interactions 3"
+
+                    int_out(:, counter+1)=[nint(Fe_distances(2:3, j)), nint(Fe_distances(6:8, j))]
+                    exchange_out(counter+1)=exchange_J_Nov(mag_wyckoff(1, i), mag_wyckoff(2, i), U, 1)
 
                     counter=counter+1
                 end if
@@ -512,15 +520,30 @@ do i=1, size(mag_wyckoff, 2), 1
 
                 ! Check if interaction is 0 before printing
                 if (exchange_J_Nov(mag_wyckoff(1, i), mag_wyckoff(2, i), U, 1) /= 0) then
-                    write (unit=10, fmt=interaction_fmt, iostat=istat) counter, nint(Fe_distances(2:3, j)),&
-                    & nint(Fe_distances(6:8, j)), exchange_J_Nov(mag_wyckoff(1, i), mag_wyckoff(2, i), U, 1)
-                    if (istat/=0) stop "Error writing to .ucf file interactions 4"
+
+                    int_out(:, counter+1)=[nint(Fe_distances(2:3, j)), nint(Fe_distances(6:8, j))]
+                    exchange_out(counter+1)=exchange_J_Nov(mag_wyckoff(1, i), mag_wyckoff(2, i), U, 1)
 
                     counter=counter+1
                 end if
             end if
         end if
         
+    end do
+end do
+
+! Writing interactions out, sorted by atom site i and then by atom site j
+counter=0
+do i=1, N, 1
+    do j=1, N, 1
+        do k=1, size(exchange_out), 1
+            if ((int_out(1, k) == i-1) .and. (int_out(2, k) == j-1)) then
+                write (unit=10, fmt=interaction_fmt, iostat=istat) counter, int_out(:, k), exchange_out(k)
+                if (istat/=0) stop "Error writing to .ucf file interactions 3"
+
+                counter=counter+1
+            end if
+        end do
     end do
 end do
 
@@ -533,8 +556,7 @@ if (istat/=0) stop "Error closing .ucf file"
 ! Creating the material file
 
 ! Writing the .mat file name to a variable
-mat_fname="SrFeO-test.mat"
-mat_fname=trim(mat_fname)
+mat_fname=trim(fname//".mat")
 
 ! Opening .ucf file
 open (unit=20, file=mat_fname, iostat=istat, status='replace')
@@ -628,6 +650,10 @@ deallocate (Fe_distances, stat=istat)
 if(istat/=0) stop 'Error deallocating Fe_distances'
 deallocate (mat_array, stat=istat)
 if(istat/=0) stop 'Error deallocating mat_array'
+deallocate (int_out, stat=istat)
+if(istat/=0) stop 'Error deallocating int_out'
+deallocate (exchange_out, stat=istat)
+if(istat/=0) stop 'Error deallocating exchange_out'
 ! Subroutines and functions
 contains
 
