@@ -33,6 +33,7 @@ U=0.0_dp
 
 ! ucf and mat file name
 fname="SrFeO-test"
+
 ! Define lattice constants in orthogonal and non-orthogonal bases
 ! a is the characteristic length (nearest neighbour distance) and b and c are the multiples of a
 ! in their respective directions. Here a and c are for room temp SrFe12O19 from literature
@@ -586,7 +587,7 @@ do i=1, mag_atom_types, 1
     write(tnum, *) i
     num_char=trim(adjustl(tnum))
 
-    write(tnum2, *) mag_moment_Nov(trim(mat_array(i, 1)), U)
+    write(tnum2, *) abs(mag_moment_Nov(trim(mat_array(i, 1)), U))
     mag_mo_char=trim(adjustl(tnum2))
 
     write (unit=20, fmt=*, iostat=istat) "material["//num_char//"]:material-name="//trim(mat_array(i, 2)) 
