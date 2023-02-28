@@ -29,7 +29,7 @@ real(kind=dp), dimension(:), allocatable :: exchange_out
 ! Visualisation of the hcp unit cell http://lampx.tugraz.at/~hadley/ss1/crystalstructure/structures/hcp/hcp.php
 
 ! Define potential U in eV
-U=0.0_dp
+U=6.0_dp
 
 ! ucf and mat file name
 fname="SrFeO-test"
@@ -898,32 +898,56 @@ wyck_j=trim(wyckoff_id(wyckoff_j))
 ! f1=-, f2=-, k=+, a=+, b=+
 
 if ((wyck_i=="2a" .and. wyck_j=="4f1") .or. (wyck_i=="4f1" .and. wyck_j=="2a")) then
-    a=0.056709 ; b=-1.52217 ; c=12.831
+    a=12.0847_dp ; b=-1.40185_dp ; c=0.0506747_dp
+!    a=0.056709 ; b=-1.52217 ; c=12.831
+!    exchange_J_Nov=-5.01_dp*10.0_dp**(-21.0_dp)
 elseif ((wyck_i=="2a" .and. wyck_j=="12k") .or. (wyck_i=="12k" .and. wyck_j=="2a")) then
-    a=0.0524558 ; b=-1.42884 ; c=12.3204
+    a=2.35593_dp ; b=-0.507986_dp ; c=0.0253374_dp
+!    a=0.0524558 ; b=-1.42884 ; c=12.3204
+!    exchange_J_Nov=0.0_dp
 elseif ((wyck_i=="2b" .and. wyck_j=="4f1") .or. (wyck_i=="4f1" .and. wyck_j=="2b")) then
-    a=0.0496203 ; b=-1.3895 ; c=12.0483
+    a=0.644068_dp ; b=-0.0903629_dp ; c=0.00351908_dp
+!    a=0.0496203 ; b=-1.3895 ; c=12.0483
+!    exchange_J_Nov=-1.00_dp*10.0_dp**(-22.0_dp)
 elseif ((wyck_i=="2b" .and. wyck_j=="4f2") .or. (wyck_i=="4f2" .and. wyck_j=="2b")) then
-    a=0.0311899 ; b=-0.913174 ; c=8.30876
+    a=12.7797_dp ; b=-1.49954_dp ; c=0.0548976_dp
+!    a=0.0311899 ; b=-0.913174 ; c=8.30876
+!    exchange_J_Nov=-5.01_dp*10.0_dp**(-21.0_dp)
 elseif ((wyck_i=="2b" .and. wyck_j=="12k") .or. (wyck_i=="12k" .and. wyck_j=="2b")) then
-    a=0.0241971 ; b=-0.605029 ; c=4.64307
+    a=4.69492_dp ; b=-0.627656_dp ; c=0.0260412_dp
+!    a=0.0241971 ; b=-0.605029 ; c=4.64307
+!    exchange_J_Nov=2.00_dp*10.0_dp**(-21.0_dp)
 elseif ((wyck_i=="4f1" .and. wyck_j=="4f2") .or. (wyck_i=="4f2" .and. wyck_j=="4f1")) then
-    a=0.025519 ; b=-0.579585 ; c=3.72495
+    a=3.83051_dp ; b=-0.608118_dp ; c=0.0274488_dp
+!    a=0.025519 ; b=-0.579585 ; c=3.72495
+!    exchange_J_Nov=1.00_dp*10.0_dp**(-21.0_dp)
 elseif ((wyck_i=="4f1" .and. wyck_j=="12k") .or. (wyck_i=="12k" .and. wyck_j=="4f1")) then
-    a=0.025519 ; b=-0.510957 ; c=2.36747
+    a=8.38983_dp ; b=-0.940263_dp ; c=0.0330793_dp
+!    a=0.025519 ; b=-0.510957 ; c=2.36747
+!    exchange_J_Nov=-4.01_dp*10.0_dp**(-21.0_dp)
 elseif ((wyck_i=="4f2" .and. wyck_j=="12k") .or. (wyck_i=="12k" .and. wyck_j=="4f2")) then
-    a=0.00567078 ; b=-0.117902 ; c=0.731472
+    a=12.3559_dp ; b=-1.44092_dp ; c=0.05349_dp
+!    a=0.00567078 ; b=-0.117902 ; c=0.731472
+!    exchange_J_Nov=-5.01_dp*10.0_dp**(-21.0_dp)
 elseif (wyck_i=="4f1" .and. wyck_j=="4f1") then
-    a=0.0415904 ; b=-0.931174 ; c=5.86063
+    a=5.8549_dp ; b=-0.927841_dp ; c=0.0413623_dp
+!    a=0.0415904 ; b=-0.931174 ; c=5.86063
+!    exchange_J_Nov=1.00_dp*10.0_dp**(-21.0_dp)
 elseif (wyck_i=="4f2" .and. wyck_j=="4f2") then
-    a=0.0148096 ; b=-0.380439 ; c=2.42676
+    a=2.45098_dp ; b=-0.387636_dp ; c=0.0153073_dp
+!    a=0.0148096 ; b=-0.380439 ; c=2.42676
+!    exchange_J_Nov=6.01_dp*10.0_dp**(-22.0_dp)
 elseif (wyck_i=="12k" .and. wyck_j=="12k") then
-    a=0.0206911 ; b=-0.375048 ; c=1.79875
+    a=1.81961_dp ; b=-0.38029_dp ; c=0.0210068_dp
+!    a=0.0206911 ; b=-0.375048 ; c=1.79875
+!    exchange_J_Nov=1.50_dp*10.0_dp**(-21.0_dp)
 else
     a=0.0_dp ; b=0.0_dp ; c=0.0_dp
+!    exchange_J_Nov=0.0_dp
 end if
 
-exchange_J_Nov = a*U**2.0_dp + b*U + c
+!exchange_J_Nov = a*U**2.0_dp + b*U + c
+exchange_J_Nov = a + b*U + C*U**2.0_dp
 
 ! Incorporate the magnetic moments and a factor of 0.5
 
