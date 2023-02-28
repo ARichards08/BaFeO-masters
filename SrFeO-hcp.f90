@@ -419,7 +419,7 @@ do i=1, size(mag_wyckoff, 2), 1
     !& exchange_J(mag_wyckoff(1, i), mag_wyckoff(2, i), U, 1), mag_wyckoff(5, i), nint(mag_wyckoff(6, i))
 
     ! Counting interactions of nn and some nnn
-    ! Discoutning some combinations
+    ! Discounting some combinations, 2a+2b, 2a+2a, 2b+2b, 2a+4f2
     if ((trim(wyckoff_id(mag_wyckoff(1, i))) == '2a' .and. trim(wyckoff_id(mag_wyckoff(2, i))) == '2b') .or. &
     &(trim(wyckoff_id(mag_wyckoff(1, i))) == '2b' .and. trim(wyckoff_id(mag_wyckoff(2, i))) == '2a') .or. &
     &(trim(wyckoff_id(mag_wyckoff(1, i))) == '2a' .and. trim(wyckoff_id(mag_wyckoff(2, i))) == '4f2') .or. &
@@ -431,6 +431,7 @@ do i=1, size(mag_wyckoff, 2), 1
         interactions=interactions + multiplicity(mag_wyckoff(2, i))*nint(mag_wyckoff(4, i))*prim_in_unit
     end if
 
+    ! Only counting 4f1-12k and 12k-12k nnn
     if ((trim(wyckoff_id(mag_wyckoff(1, i))) == '4f1' .and. trim(wyckoff_id(mag_wyckoff(2, i))) == '12k') .or. &
     &(trim(wyckoff_id(mag_wyckoff(1, i))) == '12k' .and. trim(wyckoff_id(mag_wyckoff(2, i))) == '4f1') .or. &
     &(trim(wyckoff_id(mag_wyckoff(1, i))) == '12k' .and. trim(wyckoff_id(mag_wyckoff(2, i))) == '12k')) then
@@ -439,6 +440,12 @@ do i=1, size(mag_wyckoff, 2), 1
     
 end do
 !print *, interactions
+
+! Printing the wyckoff positions of each atom number
+!do i=1, N, 1
+!    if (trim(element_id(cell_ortho(4, i))) == "Fe") print *, nint(cell_ortho(7, i)), wyckoff_id(cell_ortho(6, i))
+!end do
+
 
 ! Allocate arrays for output
 allocate (int_out(5, interactions), stat=istat)
@@ -579,8 +586,8 @@ if (istat/=0) stop "Error writing to .mat file header"
 allocate (mat_array(num_materials, 2), stat=istat)
 if(istat/=0) stop 'Error allocating mat_names_array'
 
-mat_array(:5, 1)=["4f1", "4f2", "12k", "2a ", "2b "]
-mat_array(:, 2)=["f1", "g2", "k ", "a ", "b ", "Ba", "O "]
+mat_array(:5, 1)=["2a ", "2b ", "4f1", "4f2", "12k"]
+mat_array(:, 2)=["a ", "b ", "f1", "g2", "k ", "Ba", "O "]
 
 ! Write magnetic atom information
 do i=1, mag_atom_types, 1
