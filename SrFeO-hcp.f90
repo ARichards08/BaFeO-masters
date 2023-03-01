@@ -607,12 +607,21 @@ do i=1, mag_atom_types, 1
     if (istat/=0) stop "Error writing to .mat file 4"
     write (unit=20, fmt=*, iostat=istat) "material["//num_char//"]:unit-cell-category="//num_char
     if (istat/=0) stop "Error writing to .mat file 5"
+
+    if (mat_array(i, 1) == "4f1" .or. mat_array(i, 1) == "4f2")) then
+        write (unit=20, fmt=*, iostat=istat) "material["//num_char//"]:initial-spin-direction=0, 0, -1"
+        if (istat/=0) stop "Error writing to .mat file 6"
+    else
+        write (unit=20, fmt=*, iostat=istat) "material["//num_char//"]:initial-spin-direction=0, 0, +1"
+        if (istat/=0) stop "Error writing to .mat file 7"
+    end if
+
     write (unit=20, fmt=*, iostat=istat) "material["//num_char//"]:initial-spin-direction=random"
-    if (istat/=0) stop "Error writing to .mat file 6"
-    write (unit=20, fmt=*, iostat=istat) "material["//num_char//"]:uniaxial-anisotropy-constant=1e-23"
-    if (istat/=0) stop "Error writing to .mat file 7"
-    write (unit=20, fmt=*, iostat=istat) ""
     if (istat/=0) stop "Error writing to .mat file 8"
+    write (unit=20, fmt=*, iostat=istat) "material["//num_char//"]:uniaxial-anisotropy-constant=1e-23"
+    if (istat/=0) stop "Error writing to .mat file 9"
+    write (unit=20, fmt=*, iostat=istat) ""
+    if (istat/=0) stop "Error writing to .mat file 10"
 end do
 
 ! Write non-magnetic atom information
