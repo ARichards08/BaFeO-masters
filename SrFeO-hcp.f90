@@ -608,7 +608,7 @@ do i=1, mag_atom_types, 1
     write (unit=20, fmt=*, iostat=istat) "material["//num_char//"]:unit-cell-category="//num_char
     if (istat/=0) stop "Error writing to .mat file 5"
 
-    if (mat_array(i, 1) == "4f1" .or. mat_array(i, 1) == "4f2")) then
+    if ((mat_array(i, 1) == "4f1") .or. (mat_array(i, 1) == "4f2")) then
         write (unit=20, fmt=*, iostat=istat) "material["//num_char//"]:initial-spin-direction=0, 0, -1"
         if (istat/=0) stop "Error writing to .mat file 6"
     else
