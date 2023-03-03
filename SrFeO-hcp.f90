@@ -616,8 +616,8 @@ do i=1, mag_atom_types, 1
         if (istat/=0) stop "Error writing to .mat file 7"
     end if
 
-    write (unit=20, fmt=*, iostat=istat) "material["//num_char//"]:initial-spin-direction=random"
-    if (istat/=0) stop "Error writing to .mat file 8"
+!    write (unit=20, fmt=*, iostat=istat) "material["//num_char//"]:initial-spin-direction=random"
+!    if (istat/=0) stop "Error writing to .mat file 8"
     write (unit=20, fmt=*, iostat=istat) "material["//num_char//"]:uniaxial-anisotropy-constant=1e-23"
     if (istat/=0) stop "Error writing to .mat file 9"
     write (unit=20, fmt=*, iostat=istat) ""
