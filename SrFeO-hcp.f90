@@ -3,7 +3,7 @@ implicit none
 
 integer, parameter :: dp=selected_real_kind(15, 300)
 real(kind=dp), parameter :: pi=4.0_dp*atan(1.0_dp)
-character(len=*), parameter :: interaction_fmt="(6I4.1, E15.6E2)"
+character(len=*), parameter :: interaction_fmt="(7I4.1, BN, G15.6E2, BN, G15.6E2)"
 
 ! prim_cell is the primitive unit cell. cell and cell_ortho are the regular unit cell we are using in
 ! either non-orthogonal or orthogonal bases. n_cell and n_cell_ortho are the same but contain 
@@ -24,12 +24,12 @@ character(len=132), dimension(:, :), allocatable :: mat_array
 character(len=132) :: tnum, tnum2
 integer :: num_materials, interactions
 integer, dimension(:, :), allocatable :: int_out
-real(kind=dp), dimension(:), allocatable :: exchange_out
+real(kind=dp), dimension(:, :), allocatable :: exchange_out
 
 ! Visualisation of the hcp unit cell http://lampx.tugraz.at/~hadley/ss1/crystalstructure/structures/hcp/hcp.php
 
 ! Define potential U in eV
-U=6.0_dp
+U=9.25_dp
 
 ! ucf and mat file name
 fname="SrFeO-test"
@@ -400,6 +400,7 @@ do i=1, size(mag_wyckoff, 2), 1
     
 end do
 
+
 ! Correct values for the nearest neighbour number and the nearest neighbour distances for each type of interaction.
 ! Keepin mind that the distances are in nm here
 correct_nn=[6, 2, 3, 3, 1, 2, 6, 3, 3, 1, 6, 6, 3, 1, 2, 6, 6, 1, 1, 2, 6, 6, 6, 6, 2]
@@ -448,11 +449,59 @@ end do
 
 
 ! Allocate arrays for output
-allocate (int_out(5, interactions), stat=istat)
+
+! int_out holds atom sites i and j, as well as the x y and z values of which neighbour cell the interactions is happening from
+! In addition to an integer expressing if the interaction is first (1) or second nearest neighbour (2)
+allocate (int_out(6, interactions), stat=istat)
 if(istat/=0) stop 'Error allocating int_out'
-allocate (exchange_out(interactions), stat=istat)
+! Holds the value of the interaction constant, as well as the bond angle
+allocate (exchange_out(2, interactions), stat=istat)
 if(istat/=0) stop 'Error allocating exchange_out'
 
+! Saving the output data to arrays to be sorted before being written to a file
+counter=0
+do i=1, size(mag_wyckoff, 2), 1
+
+    do j=1, size(Fe_distances, 2), 1
+
+        ! If the distance being checked is from the same wyckoff positions being checked
+        if ((Fe_distances(4, j) == mag_wyckoff(1, i)) .and. (Fe_distances(5, j) == mag_wyckoff(2, i))) then
+            ! Writing out nearest neighbour interactions
+            if (round6(Fe_distances(1, j)) == mag_wyckoff(3, i)) then
+                ! Check if interaction is 0 before printing
+                if (exchange_J_Nov(mag_wyckoff(1, i), mag_wyckoff(2, i), U, 1) /= 0) then
+
+                    int_out(:, counter+1)=[nint(Fe_distances(2:3, j)), nint(Fe_distances(6:8, j)), 1]
+                    exchange_out(1, counter+1)=exchange_J_Nov(mag_wyckoff(1, i), mag_wyckoff(2, i), U, 1)
+                    exchange_out(2, counter+1)=bond_angle(nint(Fe_distances(2, j)), nint(Fe_distances(3, j)), &
+                    &nint(Fe_distances(6, j)), nint(Fe_distances(7, j)), nint(Fe_distances(8, j)))
+                    counter=counter+1
+                end if
+            end if
+
+            ! Writing out next nearest neighbour interactions
+            if ((round6(Fe_distances(1, j)) == mag_wyckoff(5, i)) .and. &
+                &((trim(wyckoff_id(mag_wyckoff(1, i))) == '4f1' .and. trim(wyckoff_id(mag_wyckoff(2, i))) == '12k') .or. &
+                &(trim(wyckoff_id(mag_wyckoff(1, i))) == '12k' .and. trim(wyckoff_id(mag_wyckoff(2, i))) == '4f1') .or. &
+                &(trim(wyckoff_id(mag_wyckoff(1, i))) == '12k' .and. trim(wyckoff_id(mag_wyckoff(2, i))) == '12k'))) then
+
+                ! Check if interaction is 0 before printing
+                if (exchange_J_Nov(mag_wyckoff(1, i), mag_wyckoff(2, i), U, 1) /= 0) then
+
+                    int_out(:, counter+1)=[nint(Fe_distances(2:3, j)), nint(Fe_distances(6:8, j)), 2]
+                    exchange_out(1, counter+1)=exchange_J_Nov(mag_wyckoff(1, i), mag_wyckoff(2, i), U, 1)
+                    exchange_out(2, counter+1)=bond_angle(nint(Fe_distances(2, j)), nint(Fe_distances(3, j)), &
+                    &nint(Fe_distances(6, j)), nint(Fe_distances(7, j)), nint(Fe_distances(8, j)))
+                    counter=counter+1
+                end if
+            end if
+        end if
+
+    end do
+end do
+
+
+print *, maxval(exchange_out(2, :))
 ! Creating the .ucf file to output
 
 !Specifying constants for the model
@@ -500,53 +549,13 @@ if (istat/=0) stop "Error writing to .ucf file interactions 1"
 write (unit=10, fmt=*, iostat=istat) interactions, interaction_type
 if (istat/=0) stop "Error writing to .ucf file interactions 2"
 
-! Saving the output data to arrays to be sorted before being written to a file
-counter=0
-do i=1, size(mag_wyckoff, 2), 1
-
-    do j=1, size(Fe_distances, 2), 1
-        
-        ! If the distance being checked is from the same wyckoff positions being checked
-        if ((Fe_distances(4, j) == mag_wyckoff(1, i)) .and. (Fe_distances(5, j) == mag_wyckoff(2, i))) then
-            ! Writing out nearest neighbour interactions
-            if (round6(Fe_distances(1, j)) == mag_wyckoff(3, i)) then
-                ! Check if interaction is 0 before printing
-                if (exchange_J_Nov(mag_wyckoff(1, i), mag_wyckoff(2, i), U, 1) /= 0) then
-
-                    int_out(:, counter+1)=[nint(Fe_distances(2:3, j)), nint(Fe_distances(6:8, j))]
-                    exchange_out(counter+1)=exchange_J_Nov(mag_wyckoff(1, i), mag_wyckoff(2, i), U, 1)
-
-                    counter=counter+1
-                end if
-            end if
-
-            ! Writing out next nearest neighbour interactions
-            if ((round6(Fe_distances(1, j)) == mag_wyckoff(5, i)) .and. &
-                &((trim(wyckoff_id(mag_wyckoff(1, i))) == '4f1' .and. trim(wyckoff_id(mag_wyckoff(2, i))) == '12k') .or. &
-                &(trim(wyckoff_id(mag_wyckoff(1, i))) == '12k' .and. trim(wyckoff_id(mag_wyckoff(2, i))) == '4f1') .or. &
-                &(trim(wyckoff_id(mag_wyckoff(1, i))) == '12k' .and. trim(wyckoff_id(mag_wyckoff(2, i))) == '12k'))) then
-
-                ! Check if interaction is 0 before printing
-                if (exchange_J_Nov(mag_wyckoff(1, i), mag_wyckoff(2, i), U, 1) /= 0) then
-
-                    int_out(:, counter+1)=[nint(Fe_distances(2:3, j)), nint(Fe_distances(6:8, j))]
-                    exchange_out(counter+1)=exchange_J_Nov(mag_wyckoff(1, i), mag_wyckoff(2, i), U, 1)
-
-                    counter=counter+1
-                end if
-            end if
-        end if
-        
-    end do
-end do
-
 ! Writing interactions out, sorted by atom site i and then by atom site j
 counter=0
 do i=1, N, 1
     do j=1, N, 1
-        do k=1, size(exchange_out), 1
+        do k=1, size(exchange_out, 2), 1
             if ((int_out(1, k) == i-1) .and. (int_out(2, k) == j-1)) then
-                write (unit=10, fmt=interaction_fmt, iostat=istat) counter, int_out(:, k), exchange_out(k)
+                write (unit=10, fmt=interaction_fmt, iostat=istat) counter, int_out(:, k), exchange_out(:, k)
                 if (istat/=0) stop "Error writing to .ucf file interactions 3"
 
                 counter=counter+1
@@ -1085,5 +1094,68 @@ mag_moment_Tej= s*(a + b*U + c*U**2.0_dp)
 return
 
 end function mag_moment_Tej
+
+! Bond Angle Calculation function
+real(kind=dp) function bond_angle(atom_i, atom_j, x, y, z)
+integer, intent(in) :: atom_i, atom_j, x, y, z
+integer :: O_atom_index, O_x, O_y, O_z, i
+real(kind=dp) :: sum_dist, sum_dist_min, dist_x, dist_y, dist_z, i_j, i_O, j_O
+
+! Set sum_dst_min to a high initial value
+sum_dist_min=100000.0_dp
+
+!  Iterate through all atoms in n_cell_ortho, checking each oxygen atom
+do i=1, size(n_cell_ortho, 2), 1
+
+    ! Check if atom element is oxygen
+    if (trim(element_id(n_cell_ortho(4, i))) == "O") then
+        ! Atom_i will always be in the central unit cell. Atom_j is dictated by x, y and z
+        ! Ading atom_i - O distance to sum_dist
+        dist_x=(cell(1, atom_i+1) - (n_cell_ortho(1, i)+n_cell_ortho(8, i)*x_prim_mul))*a
+        dist_y=(cell(2, atom_i+1) - (n_cell_ortho(2, i)+n_cell_ortho(9, i)*y_prim_mul))*b*sin(pi/3.0_dp)
+        dist_z=(cell(3, atom_i+1) - (n_cell_ortho(3, i)+n_cell_ortho(10, i)))*c
+
+        sum_dist=sqrt(dist_x**2.0_dp + dist_y**2.0_dp + dist_z**2.0_dp)
+
+        ! Adding atom_j - O distance to sum_dist
+        dist_x=((cell(1, atom_j+1)+x*x_prim_mul) - (n_cell_ortho(1, i)+n_cell_ortho(8, i)*x_prim_mul))*a
+        dist_y=((cell(2, atom_j+1)+y*y_prim_mul) - (n_cell_ortho(2, i)+n_cell_ortho(9, i)*y_prim_mul))*b*sin(pi/3.0_dp)
+        dist_z=((cell(3, atom_j+1)+z) - (n_cell_ortho(3, i)+n_cell_ortho(10, i)))*c
+
+        sum_dist=sum_dist + sqrt(dist_x**2.0_dp + dist_y**2.0_dp + dist_z**2.0_dp)
+    
+        ! If the newly calculated sum_dist is greater than the sum_dist_min value, replace the min value and save O atom info
+        if (sum_dist < sum_dist_min) then
+            sum_dist_min=sum_dist
+            O_atom_index=i
+            O_x=nint(n_cell_ortho(8, i))
+            O_y=nint(n_cell_ortho(9, i))
+            O_z=nint(n_cell_ortho(10, i))
+        end if
+    end if
+end do
+
+! Calculate the side lengths
+dist_x=(cell(1, atom_i+1) - (n_cell_ortho(1, O_atom_index)+n_cell_ortho(8, O_atom_index)*x_prim_mul))*a
+dist_y=(cell(2, atom_i+1) - (n_cell_ortho(2, O_atom_index)+n_cell_ortho(9, O_atom_index)*y_prim_mul))*b*sin(pi/3.0_dp)
+dist_z=(cell(3, atom_i+1) - (n_cell_ortho(3, O_atom_index)+n_cell_ortho(10, O_atom_index)))*c
+i_O=sqrt(dist_x**2.0_dp + dist_y**2.0_dp +dist_z**2.0_dp)
+
+dist_x=((cell(1, atom_j+1)+x*x_prim_mul) - (n_cell_ortho(1, O_atom_index)+n_cell_ortho(8, O_atom_index)*x_prim_mul))*a
+dist_y=((cell(2, atom_j+1)+y*y_prim_mul)-(n_cell_ortho(2, O_atom_index)+n_cell_ortho(9, O_atom_index)*y_prim_mul))*b*sin(pi/3.0_dp)
+dist_z=((cell(3, atom_j+1)+z) - (n_cell_ortho(3, O_atom_index)+n_cell_ortho(10, O_atom_index)))*c
+j_O=sqrt(dist_x**2.0_dp + dist_y**2.0_dp +dist_z**2.0_dp)
+
+dist_x=(cell(1, atom_i+1) -(cell(1, atom_j+1)+x*x_prim_mul))*a
+dist_y=(cell(2, atom_i+1) -(cell(2, atom_j+1)+y*y_prim_mul))*b*sin(pi/3.0_dp)
+dist_z=(cell(3, atom_i+1) -(cell(3, atom_j+1)+z))*c
+i_j=sqrt(dist_x**2.0_dp + dist_y**2.0_dp +dist_z**2.0_dp)
+
+! Cosine rule calculation for the bond angle in degrees
+bond_angle=acos((i_O**2.0_dp+j_O**2.0_dp-i_j**2.0_dp)/(2.0_dp*i_O*j_O))*180.0_dp/(2.0_dp*pi)
+
+return
+
+end function bond_angle
 
 end program BaFeO_hcp
