@@ -3,7 +3,7 @@ implicit none
 
 integer, parameter :: dp=selected_real_kind(15, 300)
 real(kind=dp), parameter :: pi=4.0_dp*atan(1.0_dp)
-character(len=*), parameter :: interaction_fmt="(7I4.1, BN, G15.6E2, BN, G15.6E2)"
+character(len=*), parameter :: interaction_fmt="(6I4.1, E15.6E2)" , test_fmt="(BN, G15.6E2, BN, G15.6E2)"
 
 ! prim_cell is the primitive unit cell. cell and cell_ortho are the regular unit cell we are using in
 ! either non-orthogonal or orthogonal bases. n_cell and n_cell_ortho are the same but contain 
@@ -502,6 +502,22 @@ end do
 
 
 print *, maxval(exchange_out(2, :))
+print *, minval(exchange_out(2, :))
+
+!!!!!
+! Testing
+!!!!!
+open (unit=30, file="angle-strength.dat", iostat=istat, status='replace')
+if (istat/=0) stop "Error opening .dat file"
+
+do i=1, size(exchange_out, 2), 1
+    write (unit=30, fmt=test_fmt, iostat=istat) exchange_out(: ,i)
+    if (istat/=0) stop "Error writing to .dat file 1"
+end do
+
+close (unit=30, iostat=istat)
+if (istat/=0) stop "Error closing .dat file"
+
 ! Creating the .ucf file to output
 
 !Specifying constants for the model
@@ -555,7 +571,7 @@ do i=1, N, 1
     do j=1, N, 1
         do k=1, size(exchange_out, 2), 1
             if ((int_out(1, k) == i-1) .and. (int_out(2, k) == j-1)) then
-                write (unit=10, fmt=interaction_fmt, iostat=istat) counter, int_out(:, k), exchange_out(:, k)
+                write (unit=10, fmt=interaction_fmt, iostat=istat) counter, int_out(:5, k), exchange_out(1, k)
                 if (istat/=0) stop "Error writing to .ucf file interactions 3"
 
                 counter=counter+1
@@ -1110,7 +1126,7 @@ do i=1, size(n_cell_ortho, 2), 1
     ! Check if atom element is oxygen
     if (trim(element_id(n_cell_ortho(4, i))) == "O") then
         ! Atom_i will always be in the central unit cell. Atom_j is dictated by x, y and z
-        ! Ading atom_i - O distance to sum_dist
+        ! Adding atom_i - O distance to sum_dist
         dist_x=(cell(1, atom_i+1) - (n_cell_ortho(1, i)+n_cell_ortho(8, i)*x_prim_mul))*a
         dist_y=(cell(2, atom_i+1) - (n_cell_ortho(2, i)+n_cell_ortho(9, i)*y_prim_mul))*b*sin(pi/3.0_dp)
         dist_z=(cell(3, atom_i+1) - (n_cell_ortho(3, i)+n_cell_ortho(10, i)))*c
@@ -1136,23 +1152,25 @@ do i=1, size(n_cell_ortho, 2), 1
 end do
 
 ! Calculate the side lengths
-dist_x=(cell(1, atom_i+1) - (n_cell_ortho(1, O_atom_index)+n_cell_ortho(8, O_atom_index)*x_prim_mul))*a
-dist_y=(cell(2, atom_i+1) - (n_cell_ortho(2, O_atom_index)+n_cell_ortho(9, O_atom_index)*y_prim_mul))*b*sin(pi/3.0_dp)
-dist_z=(cell(3, atom_i+1) - (n_cell_ortho(3, O_atom_index)+n_cell_ortho(10, O_atom_index)))*c
-i_O=sqrt(dist_x**2.0_dp + dist_y**2.0_dp +dist_z**2.0_dp)
+! Need to take into account not just the fractional cell coordinates but also which relative
+! neighbouring cell the atoms might be in
+dist_x=(cell(1, atom_i+1) - (n_cell_ortho(1, O_atom_index) + n_cell_ortho(8, O_atom_index)*x_prim_mul))*a
+dist_y=(cell(2, atom_i+1) - (n_cell_ortho(2, O_atom_index) + n_cell_ortho(9, O_atom_index)*y_prim_mul))*b*sin(pi/3.0_dp)
+dist_z=(cell(3, atom_i+1) - (n_cell_ortho(3, O_atom_index) + n_cell_ortho(10, O_atom_index)))*c
+i_O=sqrt(dist_x**2.0_dp + dist_y**2.0_dp + dist_z**2.0_dp)
 
-dist_x=((cell(1, atom_j+1)+x*x_prim_mul) - (n_cell_ortho(1, O_atom_index)+n_cell_ortho(8, O_atom_index)*x_prim_mul))*a
+dist_x=((cell(1, atom_j+1)+x*x_prim_mul) - (n_cell_ortho(1, O_atom_index) + n_cell_ortho(8, O_atom_index)*x_prim_mul))*a
 dist_y=((cell(2, atom_j+1)+y*y_prim_mul)-(n_cell_ortho(2, O_atom_index)+n_cell_ortho(9, O_atom_index)*y_prim_mul))*b*sin(pi/3.0_dp)
-dist_z=((cell(3, atom_j+1)+z) - (n_cell_ortho(3, O_atom_index)+n_cell_ortho(10, O_atom_index)))*c
-j_O=sqrt(dist_x**2.0_dp + dist_y**2.0_dp +dist_z**2.0_dp)
+dist_z=((cell(3, atom_j+1)+z) - (n_cell_ortho(3, O_atom_index) + n_cell_ortho(10, O_atom_index)))*c
+j_O=sqrt(dist_x**2.0_dp + dist_y**2.0_dp + dist_z**2.0_dp)
 
-dist_x=(cell(1, atom_i+1) -(cell(1, atom_j+1)+x*x_prim_mul))*a
-dist_y=(cell(2, atom_i+1) -(cell(2, atom_j+1)+y*y_prim_mul))*b*sin(pi/3.0_dp)
-dist_z=(cell(3, atom_i+1) -(cell(3, atom_j+1)+z))*c
-i_j=sqrt(dist_x**2.0_dp + dist_y**2.0_dp +dist_z**2.0_dp)
+dist_x=(cell(1, atom_i+1) - (cell(1, atom_j+1)+x*x_prim_mul))*a
+dist_y=(cell(2, atom_i+1) - (cell(2, atom_j+1)+y*y_prim_mul))*b*sin(pi/3.0_dp)
+dist_z=(cell(3, atom_i+1) - (cell(3, atom_j+1)+z))*c
+i_j=sqrt(dist_x**2.0_dp + dist_y**2.0_dp + dist_z**2.0_dp)
 
 ! Cosine rule calculation for the bond angle in degrees
-bond_angle=acos((i_O**2.0_dp+j_O**2.0_dp-i_j**2.0_dp)/(2.0_dp*i_O*j_O))*180.0_dp/(2.0_dp*pi)
+bond_angle=acos((i_O**2.0_dp+j_O**2.0_dp-i_j**2.0_dp)/(2.0_dp*i_O*j_O))*180.0_dp/pi
 
 return
 
