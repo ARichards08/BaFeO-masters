@@ -81,10 +81,10 @@ atom_data(:, 4) = [1.0_dp/3.0_dp, 2.0_dp/3.0_dp, 0.02728_dp, 2.0_dp, 2.0_dp, 4.0
 atom_data(:, 5) = [1.0_dp/3.0_dp, 2.0_dp/3.0_dp, 0.19080_dp, 2.0_dp, 3.0_dp, 5.0_dp]
 atom_data(:, 6) = [0.16878_dp, 2*(0.16878_dp), -0.10921_dp, 2.0_dp, 4.0_dp, 6.0_dp]
 atom_data(:, 7) = [0.0_dp, 0.0_dp, 0.1516_dp, 3.0_dp, 6.0_dp, 7.0_dp]
-atom_data(:, 8) = [1.0_dp/3.0_dp, 2.0_dp/3.0_dp, -0.0552_dp, 3.0_dp, 6.0_dp, 8.0_dp]
-atom_data(:, 9) = [0.1828_dp, 2*(0.1828_dp), 1.0_dp/4.0_dp, 3.0_dp, 6.0_dp, 9.0_dp]
-atom_data(:, 10) = [0.1563_dp, 2*(0.1563_dp), 0.0524_dp, 3.0_dp, 6.0_dp, 6.0_dp]
-atom_data(:, 11) = [0.5051_dp, 2*(0.5051_dp), 0.1510_dp, 3.0_dp, 6.0_dp, 6.0_dp]
+atom_data(:, 8) = [1.0_dp/3.0_dp, 2.0_dp/3.0_dp, -0.0552_dp, 3.0_dp, 7.0_dp, 8.0_dp]
+atom_data(:, 9) = [0.1828_dp, 2*(0.1828_dp), 1.0_dp/4.0_dp, 3.0_dp, 8.0_dp, 9.0_dp]
+atom_data(:, 10) = [0.1563_dp, 2*(0.1563_dp), 0.0524_dp, 3.0_dp, 9.0_dp, 6.0_dp]
+atom_data(:, 11) = [0.5051_dp, 2*(0.5051_dp), 0.1510_dp, 3.0_dp, 10.0_dp, 6.0_dp]
 
 ! From the data, find the number of different element_ids
 ! that have Fe atoms assigned to them, and
@@ -503,6 +503,7 @@ end do
 
 print *, maxval(exchange_out(2, :))
 print *, minval(exchange_out(2, :))
+print *, sum(exchange_out, 2)/size(exchange_out, 2)
 
 !!!!!
 ! Testing
@@ -839,7 +840,15 @@ elseif (num == 4.0_dp) then
 elseif (num == 5.0_dp) then
     material_id='Sr '
 elseif (num == 6.0_dp) then
-    material_id='O'
+    material_id='O1'
+elseif (num == 7.0_dp) then
+    material_id='O2'
+elseif (num == 8.0_dp) then
+    material_id='O3'
+elseif (num == 9.0_dp) then
+    material_id='O4'
+elseif (num == 10.0_dp) then
+    material_id='O5'
 else
     material_id='N/A'
 end if
@@ -1116,37 +1125,89 @@ real(kind=dp) function bond_angle(atom_i, atom_j, x, y, z)
 integer, intent(in) :: atom_i, atom_j, x, y, z
 integer :: O_atom_index, O_x, O_y, O_z, i
 real(kind=dp) :: sum_dist, sum_dist_min, dist_x, dist_y, dist_z, i_j, i_O, j_O
+character(:), allocatable :: mat_i, mat_j
+
+! Array that will contain the acceptable oxygen wyckoff positions for a pair of iron wyckoff positions
+character(len=3), dimension(2) :: O_accepted_wyck
 
 ! Set sum_dst_min to a high initial value
 sum_dist_min=100000.0_dp
+
+! Set iron atom material
+mat_i=trim(material_id(cell(5, atom_i)))
+mat_j=trim(material_id(cell(5, atom_j)))
+
+! Check accepted oxygen wyckoff positions for the given iron materials
+if ((mat_i=="Fe1" .and. mat_j=="Fe3") .or. (mat_i=="Fe3" .and. mat_j=="Fe1")) then
+    do i=1, size(atom_data, 2), 1
+        if (trim(material_id(atom_data(5, i))) == "O4") O_accepted_wyck=[wyckoff_id(atom_data(6, i)), "N/A"]
+    end do
+elseif ((mat_i=="Fe1" .and. mat_j=="Fe5") .or. (mat_i=="Fe5" .and. mat_j=="Fe1")) then
+    do i=1, size(atom_data, 2), 1
+        if (trim(material_id(atom_data(5, i))) == "O4") O_accepted_wyck=[wyckoff_id(atom_data(6, i)), "N/A"]
+    end do
+elseif ((mat_i=="Fe2" .and. mat_j=="Fe5") .or. (mat_i=="Fe5" .and. mat_j=="Fe2")) then
+    do i=1, size(atom_data, 2), 1
+        if (trim(material_id(atom_data(5, i))) == "O1") O_accepted_wyck=[wyckoff_id(atom_data(6, i)), "N/A"]
+    end do
+elseif ((mat_i=="Fe2" .and. mat_j=="Fe4") .or. (mat_i=="Fe4" .and. mat_j=="Fe2")) then
+    do i=1, size(atom_data, 2), 1
+        if (trim(material_id(atom_data(5, i))) == "O3") O_accepted_wyck=[wyckoff_id(atom_data(6, i)), "N/A"]
+    end do
+elseif ((mat_i=="Fe3" .and. mat_j=="Fe5") .or. (mat_i=="Fe5" .and. mat_j=="Fe3")) then
+    do i=1, size(atom_data, 2), 1
+        if (trim(material_id(atom_data(5, i))) == "O2") O_accepted_wyck=[wyckoff_id(atom_data(6, i)), "N/A"]
+    end do
+elseif (mat_i=="Fe4" .and. mat_j=="Fe4") then
+    do i=1, size(atom_data, 2), 1
+        if (trim(material_id(atom_data(5, i))) == "O3") O_accepted_wyck=[wyckoff_id(atom_data(6, i)), "N/A"]
+    end do
+elseif ((mat_i=="Fe4" .and. mat_j=="Fe5") .or. (mat_i=="Fe5" .and. mat_j=="Fe4")) then
+    do i=1, size(atom_data, 2), 1
+        if (trim(material_id(atom_data(5, i))) == "O5") O_accepted_wyck=[wyckoff_id(atom_data(6, i)), "N/A"]
+    end do
+elseif (mat_i=="Fe5" .and. mat_j=="Fe5") then
+    do i=1, size(atom_data, 2), 1
+        if (trim(material_id(atom_data(5, i))) == "O2") O_accepted_wyck(1)=wyckoff_id(atom_data(6, i))
+        if (trim(material_id(atom_data(5, i))) == "O5") O_accepted_wyck(2)=wyckoff_id(atom_data(6, i))
+    end do
+else
+    O_accepted_wyck=["N/A", "N/A"]
+end if
 
 !  Iterate through all atoms in n_cell_ortho, checking each oxygen atom
 do i=1, size(n_cell_ortho, 2), 1
 
     ! Check if atom element is oxygen
     if (trim(element_id(n_cell_ortho(4, i))) == "O") then
-        ! Atom_i will always be in the central unit cell. Atom_j is dictated by x, y and z
-        ! Adding atom_i - O distance to sum_dist
-        dist_x=(cell(1, atom_i+1) - (n_cell_ortho(1, i)+n_cell_ortho(8, i)*x_prim_mul))*a
-        dist_y=(cell(2, atom_i+1) - (n_cell_ortho(2, i)+n_cell_ortho(9, i)*y_prim_mul))*b*sin(pi/3.0_dp)
-        dist_z=(cell(3, atom_i+1) - (n_cell_ortho(3, i)+n_cell_ortho(10, i)))*c
 
-        sum_dist=sqrt(dist_x**2.0_dp + dist_y**2.0_dp + dist_z**2.0_dp)
+        ! Check if the oxygen's wyckoff position should be accepted. Also if there are no accepted positions due to
+        ! lack of data
+        if ( any(O_accepted_wyck==wyckoff_id(n_cell_ortho(6, i))) .or. all(O_accepted_wyck=="N/A") ) then
 
-        ! Adding atom_j - O distance to sum_dist
-        dist_x=((cell(1, atom_j+1)+x*x_prim_mul) - (n_cell_ortho(1, i)+n_cell_ortho(8, i)*x_prim_mul))*a
-        dist_y=((cell(2, atom_j+1)+y*y_prim_mul) - (n_cell_ortho(2, i)+n_cell_ortho(9, i)*y_prim_mul))*b*sin(pi/3.0_dp)
-        dist_z=((cell(3, atom_j+1)+z) - (n_cell_ortho(3, i)+n_cell_ortho(10, i)))*c
+            ! Atom_i will always be in the central unit cell. Atom_j is dictated by x, y and z
+            ! Adding atom_i - O distance to sum_dist
+            dist_x=(cell(1, atom_i+1) - (n_cell_ortho(1, i)+n_cell_ortho(8, i)*x_prim_mul))*a
+            dist_y=(cell(2, atom_i+1) - (n_cell_ortho(2, i)+n_cell_ortho(9, i)*y_prim_mul))*b*sin(pi/3.0_dp)
+            dist_z=(cell(3, atom_i+1) - (n_cell_ortho(3, i)+n_cell_ortho(10, i)))*c
 
-        sum_dist=sum_dist + sqrt(dist_x**2.0_dp + dist_y**2.0_dp + dist_z**2.0_dp)
+            sum_dist=sqrt(dist_x**2.0_dp + dist_y**2.0_dp + dist_z**2.0_dp)
+
+            ! Adding atom_j - O distance to sum_dist
+            dist_x=((cell(1, atom_j+1)+x*x_prim_mul) - (n_cell_ortho(1, i)+n_cell_ortho(8, i)*x_prim_mul))*a
+            dist_y=((cell(2, atom_j+1)+y*y_prim_mul) - (n_cell_ortho(2, i)+n_cell_ortho(9, i)*y_prim_mul))*b*sin(pi/3.0_dp)
+            dist_z=((cell(3, atom_j+1)+z) - (n_cell_ortho(3, i)+n_cell_ortho(10, i)))*c
+
+            sum_dist=sum_dist + sqrt(dist_x**2.0_dp + dist_y**2.0_dp + dist_z**2.0_dp)
     
-        ! If the newly calculated sum_dist is greater than the sum_dist_min value, replace the min value and save O atom info
-        if (sum_dist < sum_dist_min) then
-            sum_dist_min=sum_dist
-            O_atom_index=i
-            O_x=nint(n_cell_ortho(8, i))
-            O_y=nint(n_cell_ortho(9, i))
-            O_z=nint(n_cell_ortho(10, i))
+            ! If the newly calculated sum_dist is greater than the sum_dist_min value, replace the min value and save O atom info
+            if (sum_dist < sum_dist_min) then
+                sum_dist_min=sum_dist
+                O_atom_index=i
+                O_x=nint(n_cell_ortho(8, i))
+                O_y=nint(n_cell_ortho(9, i))
+                O_z=nint(n_cell_ortho(10, i))
+            end if
         end if
     end if
 end do
@@ -1177,3 +1238,4 @@ return
 end function bond_angle
 
 end program BaFeO_hcp
+
