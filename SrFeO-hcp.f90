@@ -41,7 +41,7 @@ fname="SrFeO-test"
 !a=0.58876_dp
 a=5.895_dp
 
-b=5.895_dp ! non-ortho so same as a
+b=a ! non-ortho so same as a
 !c=23.023_dp/a
 !c=2.31885_dp/a
 c=23.199_dp
@@ -415,9 +415,9 @@ interactions=0
 !& Relative distance error from Lit, Potential U (eV), Exchange Constant J, NNN distance, NNN number'
 
 do i=1, size(mag_wyckoff, 2), 1
-    !print *, wyckoff_id(mag_wyckoff(1, i)), ',', wyckoff_id(mag_wyckoff(2, i)), mag_wyckoff(3, i), nint(mag_wyckoff(4, i)),&
-    !& correct_nn(i), (mag_wyckoff(3, i)-correct_Fe_d(i)*10)/(correct_Fe_d(i)*10), U,&
-    !& exchange_J(mag_wyckoff(1, i), mag_wyckoff(2, i), U, 1), mag_wyckoff(5, i), nint(mag_wyckoff(6, i))
+!    print *, wyckoff_id(mag_wyckoff(1, i)), ',', wyckoff_id(mag_wyckoff(2, i)), mag_wyckoff(3, i), nint(mag_wyckoff(4, i)),&
+!    & correct_nn(i), (mag_wyckoff(3, i)-correct_Fe_d(i)*10)/(correct_Fe_d(i)*10), U,&
+!    & exchange_J_Nov(mag_wyckoff(1, i), mag_wyckoff(2, i), U, 1), mag_wyckoff(5, i), nint(mag_wyckoff(6, i))
 
     ! Counting interactions of nn and some nnn
     ! Discounting some combinations, 2a+2b, 2a+2a, 2b+2b, 2a+4f2
@@ -454,6 +454,7 @@ end do
 ! In addition to an integer expressing if the interaction is first (1) or second nearest neighbour (2)
 allocate (int_out(6, interactions), stat=istat)
 if(istat/=0) stop 'Error allocating int_out'
+
 ! Holds the value of the interaction constant, as well as the bond angle
 allocate (exchange_out(2, interactions), stat=istat)
 if(istat/=0) stop 'Error allocating exchange_out'
@@ -504,7 +505,7 @@ end do
 print *, maxval(exchange_out(2, :))
 print *, minval(exchange_out(2, :))
 print *, sum(exchange_out, 2)/size(exchange_out, 2)
-
+print *, size(exchange_out, 2)
 !!!!!
 ! Testing
 !!!!!
@@ -512,7 +513,7 @@ open (unit=30, file="angle-strength.dat", iostat=istat, status='replace')
 if (istat/=0) stop "Error opening .dat file"
 
 do i=1, size(exchange_out, 2), 1
-    write (unit=30, fmt=test_fmt, iostat=istat) exchange_out(: ,i)
+    write (unit=30, fmt=*, iostat=istat) exchange_out(2 ,i)
     if (istat/=0) stop "Error writing to .dat file 1"
 end do
 
