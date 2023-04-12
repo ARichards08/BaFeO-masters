@@ -22,7 +22,7 @@ integer :: failcount, x_int, y_int, z_int, mag_atoms, cell_mag_atoms, mag_atom_t
 character(:), allocatable :: fname, ucf_fname, mat_fname, interaction_type, num_char, mag_mo_char
 character(len=132), dimension(:, :), allocatable :: mat_array
 character(len=132) :: tnum, tnum2
-integer :: num_materials, interactions
+integer :: num_materials, interactions, srcount=0
 integer, dimension(:, :), allocatable :: int_out
 real(kind=dp), dimension(:, :), allocatable :: exchange_out
 
@@ -261,8 +261,7 @@ do i=1, N, 1
         ! To prevent comparing an atom with itself
         ! Distances are calculated in fractional 
         if (x_int/=0 .or. y_int/=0 .or. z_int/=0) then
-            r2=((cell_ortho(1, i)-n_cell_ortho(1, j))*a)**2 + ((cell_ortho(2, i)-n_cell_ortho(2, j))*cos(pi/6.0_dp)*b)**2&
-            & + ((cell_ortho(3, i) - n_cell_ortho(3, j))*c)**2
+            r2=(x*a)**2 + (y*cos(pi/6.0_dp)*b)**2 + (z*c)**2
             r=sqrt(r2)
 
             distances(:, counter)=[r, cell_ortho(7, i), n_cell_ortho(7, j), cell_ortho(6, i), n_cell_ortho(6, j)&
@@ -291,34 +290,46 @@ do i=1, size(distances, 2), 1
     atom_i=distances(2, i)
     atom_j=distances(3, i)
 
+    counter=0
+    if (trim(element_id(cell_ortho(4, nint(atom_i+1)))) == "Fe" .and. trim(element_id(cell_ortho(4, nint(atom_j+1)))) == "Fe") then
+        counter=2
+    end if
+
     ! Checks to see if the central atom and the interacting atom are both magnetic (Fe here)
     ! If they both are, counter=2, and the distances can be added to Fe_distances
-    counter=0
-    do j=1, N, 1
+!    counter=0
+!    do j=1, N, 1
         ! Finds the first atom in the unit cell
-        if (cell_ortho(7, j) == atom_i) then
+!        if (cell_ortho(7, j) == atom_i) then
             ! Checks if it is magnetic
-            if (trim(element_id(cell_ortho(4, j))) == 'Fe') then
-                counter=counter+1
-            end if
-        end if
+!            if (trim(element_id(cell_ortho(4, j))) == 'Fe') then
+!                counter=counter+1
+!            end if
+!        end if
 
         ! Finds the second atom in the unit cell
-        if (cell_ortho(7, j) == atom_j) then
+!        if (cell_ortho(7, j) == atom_j) then
             ! Checks if it is magnetic
-            if (trim(element_id(cell_ortho(4, j))) == 'Fe') then
-                counter=counter+1
-            end if
-        end if
-    end do
+!            if (trim(element_id(cell_ortho(4, j))) == 'Fe') then
+!                counter=counter+1
+!            end if
+!        end if
+!    end do
 
     ! If both are magnetic
     if (counter == 2) then
         Fe_distances(:, k) = distances(:, i)
+
+        if (trim(element_id(cell_ortho(4, nint(Fe_distances(2, k))))) == "Sr" .or. &
+&trim(element_id(cell_ortho(4, nint(Fe_distances(3, k))))) == "Sr") then
+          srcount=srcount+1
+        end if
+
+
         k=k+1
     end if
 end do
-
+print *,  srcount
 
 ! For each magnetic wyckoff position, calculate the two shortest distances and save 
 ! the distances and the number of times they occur in mag_wyckoff
@@ -514,7 +525,8 @@ open (unit=30, file="angle-strength.dat", iostat=istat, status='replace')
 if (istat/=0) stop "Error opening .dat file"
 
 do i=1, size(exchange_out, 2), 1
-    write (unit=30, fmt=*, iostat=istat) trim(material_id(cell(5, (int_out(1, i))))), trim(material_id(cell(5, (int_out(2, i))))),&
+    write (unit=30, fmt=*, iostat=istat) trim(element_id(cell(4, (int_out(1, i))))), trim(material_id(cell(5, (int_out(1, i))))),&
+& " ", trim(material_id(cell(5, (int_out(2, i))))), trim(element_id(cell(4, (int_out(2, i))))),&
 & exchange_out(2, i), small_dist_test(int_out(1, i), int_out(2, i), int_out(3, i), int_out(4, i), int_out(5, i))
     if (istat/=0) stop "Error writing to .dat file 1"
 end do
