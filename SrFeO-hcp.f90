@@ -296,24 +296,24 @@ do i=1, size(distances, 2), 1
     counter=0
     do j=1, N, 1
         ! Finds the first atom in the unit cell
-        if (cell(7, j) == atom_i) then
+        if (cell_ortho(7, j) == atom_i) then
             ! Checks if it is magnetic
-            if (trim(element_id(cell(4, j))) == 'Fe') then
+            if (trim(element_id(cell_ortho(4, j))) == 'Fe') then
                 counter=counter+1
             end if
         end if
 
         ! Finds the second atom in the unit cell
-        if (cell(7, j) == atom_j) then
+        if (cell_ortho(7, j) == atom_j) then
             ! Checks if it is magnetic
-            if (trim(element_id(cell(4, j))) == 'Fe') then
+            if (trim(element_id(cell_ortho(4, j))) == 'Fe') then
                 counter=counter+1
             end if
         end if
     end do
 
     ! If both are magnetic
-    if (counter >= 2) then
+    if (counter == 2) then
         Fe_distances(:, k) = distances(:, i)
         k=k+1
     end if
@@ -474,8 +474,8 @@ do i=1, size(mag_wyckoff, 2), 1
 
                     int_out(:, counter+1)=[nint(Fe_distances(2:3, j)), nint(Fe_distances(6:8, j)), 1]
                     exchange_out(1, counter+1)=exchange_J_Nov(mag_wyckoff(1, i), mag_wyckoff(2, i), U, 1)
-                    exchange_out(2, counter+1)=bond_angle(nint(Fe_distances(2, j)), nint(Fe_distances(3, j)), &
-                    &nint(Fe_distances(6, j)), nint(Fe_distances(7, j)), nint(Fe_distances(8, j)))
+                    exchange_out(2, counter+1)=bond_angle(int_out(1, counter+1), int_out(2, counter+1), int_out(3, counter+1),&
+                    & int_out(4, counter+1),int_out(5, counter+1))
                     counter=counter+1
                 end if
             end if
@@ -491,8 +491,8 @@ do i=1, size(mag_wyckoff, 2), 1
 
                     int_out(:, counter+1)=[nint(Fe_distances(2:3, j)), nint(Fe_distances(6:8, j)), 2]
                     exchange_out(1, counter+1)=exchange_J_Nov(mag_wyckoff(1, i), mag_wyckoff(2, i), U, 1)
-                    exchange_out(2, counter+1)=bond_angle(nint(Fe_distances(2, j)), nint(Fe_distances(3, j)), &
-                    &nint(Fe_distances(6, j)), nint(Fe_distances(7, j)), nint(Fe_distances(8, j)))
+                    exchange_out(2, counter+1)=bond_angle(int_out(1, counter+1), int_out(2, counter+1), int_out(3, counter+1),&
+                    & int_out(4, counter+1),int_out(5, counter+1))
                     counter=counter+1
                 end if
             end if
@@ -506,6 +506,7 @@ print *, maxval(exchange_out(2, :))
 print *, minval(exchange_out(2, :))
 print *, sum(exchange_out, 2)/size(exchange_out, 2)
 print *, size(exchange_out, 2)
+
 !!!!!
 ! Testing
 !!!!!
@@ -513,7 +514,8 @@ open (unit=30, file="angle-strength.dat", iostat=istat, status='replace')
 if (istat/=0) stop "Error opening .dat file"
 
 do i=1, size(exchange_out, 2), 1
-    write (unit=30, fmt=*, iostat=istat) exchange_out(2 ,i)
+    write (unit=30, fmt=*, iostat=istat) trim(material_id(cell(5, (int_out(1, i))))), trim(material_id(cell(5, (int_out(2, i))))),&
+& exchange_out(2, i), small_dist_test(int_out(1, i), int_out(2, i), int_out(3, i), int_out(4, i), int_out(5, i))
     if (istat/=0) stop "Error writing to .dat file 1"
 end do
 
@@ -1122,10 +1124,11 @@ return
 end function mag_moment_Tej
 
 ! Bond Angle Calculation function
+! Atom_i and Atom_j are atom id numbers, and x y and z are the relative cell coordinates of j to i
 real(kind=dp) function bond_angle(atom_i, atom_j, x, y, z)
 integer, intent(in) :: atom_i, atom_j, x, y, z
-integer :: O_atom_index, O_x, O_y, O_z, i
-real(kind=dp) :: sum_dist, sum_dist_min, dist_x, dist_y, dist_z, i_j, i_O, j_O
+integer :: O_atom_index, i
+real(kind=dp) :: sum_dist, sum_dist_min, dist_x, dist_y, dist_z, O_x, O_y, O_z, i_x, i_y, i_z, j_x, j_y, j_z, i_j, i_O, j_O
 character(:), allocatable :: mat_i, mat_j
 
 ! Array that will contain the acceptable oxygen wyckoff positions for a pair of iron wyckoff positions
@@ -1135,8 +1138,8 @@ character(len=3), dimension(2) :: O_accepted_wyck
 sum_dist_min=100000.0_dp
 
 ! Set iron atom material
-mat_i=trim(material_id(cell(5, atom_i)))
-mat_j=trim(material_id(cell(5, atom_j)))
+mat_i=trim(material_id(cell_ortho(5, atom_i)))
+mat_j=trim(material_id(cell_ortho(5, atom_j)))
 
 ! Check accepted oxygen wyckoff positions for the given iron materials
 if ((mat_i=="Fe1" .and. mat_j=="Fe3") .or. (mat_i=="Fe3" .and. mat_j=="Fe1")) then
@@ -1188,16 +1191,16 @@ do i=1, size(n_cell_ortho, 2), 1
 
             ! Atom_i will always be in the central unit cell. Atom_j is dictated by x, y and z
             ! Adding atom_i - O distance to sum_dist
-            dist_x=(cell(1, atom_i+1) - (n_cell_ortho(1, i)+n_cell_ortho(8, i)*x_prim_mul))*a
-            dist_y=(cell(2, atom_i+1) - (n_cell_ortho(2, i)+n_cell_ortho(9, i)*y_prim_mul))*b*sin(pi/3.0_dp)
-            dist_z=(cell(3, atom_i+1) - (n_cell_ortho(3, i)+n_cell_ortho(10, i)))*c
+            dist_x=(cell_ortho(1, atom_i+1) - (n_cell_ortho(1, i)+n_cell_ortho(8, i)*x_prim_mul))*a
+            dist_y=(cell_ortho(2, atom_i+1) - (n_cell_ortho(2, i)+n_cell_ortho(9, i)*y_prim_mul))*b*cos(pi/6.0_dp)
+            dist_z=(cell_ortho(3, atom_i+1) - (n_cell_ortho(3, i)+n_cell_ortho(10, i)))*c
 
             sum_dist=sqrt(dist_x**2.0_dp + dist_y**2.0_dp + dist_z**2.0_dp)
 
             ! Adding atom_j - O distance to sum_dist
-            dist_x=((cell(1, atom_j+1)+x*x_prim_mul) - (n_cell_ortho(1, i)+n_cell_ortho(8, i)*x_prim_mul))*a
-            dist_y=((cell(2, atom_j+1)+y*y_prim_mul) - (n_cell_ortho(2, i)+n_cell_ortho(9, i)*y_prim_mul))*b*sin(pi/3.0_dp)
-            dist_z=((cell(3, atom_j+1)+z) - (n_cell_ortho(3, i)+n_cell_ortho(10, i)))*c
+            dist_x=((cell_ortho(1, atom_j+1)+x*x_prim_mul) - (n_cell_ortho(1, i)+n_cell_ortho(8, i)*x_prim_mul))*a
+            dist_y=((cell_ortho(2, atom_j+1)+y*y_prim_mul) - (n_cell_ortho(2, i)+n_cell_ortho(9, i)*y_prim_mul))*b*cos(pi/6.0_dp)
+            dist_z=((cell_ortho(3, atom_j+1)+z) - (n_cell_ortho(3, i)+n_cell_ortho(10, i)))*c
 
             sum_dist=sum_dist + sqrt(dist_x**2.0_dp + dist_y**2.0_dp + dist_z**2.0_dp)
     
@@ -1205,30 +1208,37 @@ do i=1, size(n_cell_ortho, 2), 1
             if (sum_dist < sum_dist_min) then
                 sum_dist_min=sum_dist
                 O_atom_index=i
-                O_x=nint(n_cell_ortho(8, i))
-                O_y=nint(n_cell_ortho(9, i))
-                O_z=nint(n_cell_ortho(10, i))
+                O_x=n_cell_ortho(1, i)+n_cell_ortho(8, i)*x_prim_mul
+                O_y=n_cell_ortho(2, i)+n_cell_ortho(9, i)*y_prim_mul
+                O_z=n_cell_ortho(3, i)+n_cell_ortho(10, i)
             end if
         end if
     end if
 end do
 
-! Calculate the side lengths
-! Need to take into account not just the fractional cell coordinates but also which relative
-! neighbouring cell the atoms might be in
-dist_x=(cell(1, atom_i+1) - (n_cell_ortho(1, O_atom_index) + n_cell_ortho(8, O_atom_index)*x_prim_mul))*a
-dist_y=(cell(2, atom_i+1) - (n_cell_ortho(2, O_atom_index) + n_cell_ortho(9, O_atom_index)*y_prim_mul))*b*sin(pi/3.0_dp)
-dist_z=(cell(3, atom_i+1) - (n_cell_ortho(3, O_atom_index) + n_cell_ortho(10, O_atom_index)))*c
+! Simplifying the equations, calculating the fractional cell coordinates including the relative neighbouring cell
+i_x=cell_ortho(1, atom_i+1)
+i_y=cell_ortho(2, atom_i+1)
+i_z=cell_ortho(3, atom_i+1)
+
+j_x=cell_ortho(1, atom_j+1)+x*x_prim_mul
+j_y=cell_ortho(2, atom_j+1)+y*y_prim_mul
+j_z=cell_ortho(3, atom_j+1)+z
+
+! Calculate the side lengths, converting into angstrom
+dist_x=(i_x - O_x)*a
+dist_y=(i_y - O_y)*b*cos(pi/6.0_dp)
+dist_z=(i_z - O_z)*c
 i_O=sqrt(dist_x**2.0_dp + dist_y**2.0_dp + dist_z**2.0_dp)
 
-dist_x=((cell(1, atom_j+1)+x*x_prim_mul) - (n_cell_ortho(1, O_atom_index) + n_cell_ortho(8, O_atom_index)*x_prim_mul))*a
-dist_y=((cell(2, atom_j+1)+y*y_prim_mul)-(n_cell_ortho(2, O_atom_index)+n_cell_ortho(9, O_atom_index)*y_prim_mul))*b*sin(pi/3.0_dp)
-dist_z=((cell(3, atom_j+1)+z) - (n_cell_ortho(3, O_atom_index) + n_cell_ortho(10, O_atom_index)))*c
+dist_x=(j_x - O_x)*a
+dist_y=(j_y - O_y)*b*cos(pi/6.0_dp)
+dist_z=(j_z - O_z)*c
 j_O=sqrt(dist_x**2.0_dp + dist_y**2.0_dp + dist_z**2.0_dp)
 
-dist_x=(cell(1, atom_i+1) - (cell(1, atom_j+1)+x*x_prim_mul))*a
-dist_y=(cell(2, atom_i+1) - (cell(2, atom_j+1)+y*y_prim_mul))*b*sin(pi/3.0_dp)
-dist_z=(cell(3, atom_i+1) - (cell(3, atom_j+1)+z))*c
+dist_x=(i_x - j_x)*a
+dist_y=(i_y - j_y)*b*cos(pi/6.0_dp)
+dist_z=(i_z - j_z)*c
 i_j=sqrt(dist_x**2.0_dp + dist_y**2.0_dp + dist_z**2.0_dp)
 
 ! Cosine rule calculation for the bond angle in degrees
@@ -1237,6 +1247,134 @@ bond_angle=acos((i_O**2.0_dp+j_O**2.0_dp-i_j**2.0_dp)/(2.0_dp*i_O*j_O))*180.0_dp
 return
 
 end function bond_angle
+
+
+function small_dist_test(atom_i, atom_j, x, y, z)
+real(kind=dp), dimension(3) :: small_dist_test
+integer, intent(in) :: atom_i, atom_j, x, y, z
+integer :: O_atom_index, i
+real(kind=dp) :: sum_dist, sum_dist_min, dist_x, dist_y, dist_z, O_x, O_y, O_z, i_x, i_y, i_z, j_x, j_y, j_z, i_j, i_O, j_O
+real(kind=dp) :: bond_angle
+character(:), allocatable :: mat_i, mat_j
+
+! Array that will contain the acceptable oxygen wyckoff positions for a pair of iron wyckoff positions
+character(len=3), dimension(2) :: O_accepted_wyck
+
+! Set sum_dst_min to a high initial value
+sum_dist_min=100000.0_dp
+
+! Set iron atom material
+mat_i=trim(material_id(cell_ortho(5, atom_i)))
+mat_j=trim(material_id(cell_ortho(5, atom_j)))
+
+! Check accepted oxygen wyckoff positions for the given iron materials
+if ((mat_i=="Fe1" .and. mat_j=="Fe3") .or. (mat_i=="Fe3" .and. mat_j=="Fe1")) then
+    do i=1, size(atom_data, 2), 1
+        if (trim(material_id(atom_data(5, i))) == "O4") O_accepted_wyck=[wyckoff_id(atom_data(6, i)), "N/A"]
+    end do
+elseif ((mat_i=="Fe1" .and. mat_j=="Fe5") .or. (mat_i=="Fe5" .and. mat_j=="Fe1")) then
+    do i=1, size(atom_data, 2), 1
+        if (trim(material_id(atom_data(5, i))) == "O4") O_accepted_wyck=[wyckoff_id(atom_data(6, i)), "N/A"]
+    end do
+elseif ((mat_i=="Fe2" .and. mat_j=="Fe5") .or. (mat_i=="Fe5" .and. mat_j=="Fe2")) then
+    do i=1, size(atom_data, 2), 1
+        if (trim(material_id(atom_data(5, i))) == "O1") O_accepted_wyck=[wyckoff_id(atom_data(6, i)), "N/A"]
+    end do
+elseif ((mat_i=="Fe2" .and. mat_j=="Fe4") .or. (mat_i=="Fe4" .and. mat_j=="Fe2")) then
+    do i=1, size(atom_data, 2), 1
+        if (trim(material_id(atom_data(5, i))) == "O3") O_accepted_wyck=[wyckoff_id(atom_data(6, i)), "N/A"]
+    end do
+elseif ((mat_i=="Fe3" .and. mat_j=="Fe5") .or. (mat_i=="Fe5" .and. mat_j=="Fe3")) then
+    do i=1, size(atom_data, 2), 1
+        if (trim(material_id(atom_data(5, i))) == "O2") O_accepted_wyck=[wyckoff_id(atom_data(6, i)), "N/A"]
+    end do
+elseif (mat_i=="Fe4" .and. mat_j=="Fe4") then
+    do i=1, size(atom_data, 2), 1
+        if (trim(material_id(atom_data(5, i))) == "O3") O_accepted_wyck=[wyckoff_id(atom_data(6, i)), "N/A"]
+    end do
+elseif ((mat_i=="Fe4" .and. mat_j=="Fe5") .or. (mat_i=="Fe5" .and. mat_j=="Fe4")) then
+    do i=1, size(atom_data, 2), 1
+        if (trim(material_id(atom_data(5, i))) == "O5") O_accepted_wyck=[wyckoff_id(atom_data(6, i)), "N/A"]
+    end do
+elseif (mat_i=="Fe5" .and. mat_j=="Fe5") then
+    do i=1, size(atom_data, 2), 1
+        if (trim(material_id(atom_data(5, i))) == "O2") O_accepted_wyck(1)=wyckoff_id(atom_data(6, i))
+        if (trim(material_id(atom_data(5, i))) == "O5") O_accepted_wyck(2)=wyckoff_id(atom_data(6, i))
+    end do
+else
+    O_accepted_wyck=["N/A", "N/A"]
+end if
+
+!  Iterate through all atoms in n_cell_ortho, checking each oxygen atom
+do i=1, size(n_cell_ortho, 2), 1
+
+    ! Check if atom element is oxygen
+    if (trim(element_id(n_cell_ortho(4, i))) == "O") then
+
+        ! Check if the oxygen's wyckoff position should be accepted. Also if there are no accepted positions due to
+        ! lack of data
+        if ( any(O_accepted_wyck==wyckoff_id(n_cell_ortho(6, i))) .or. all(O_accepted_wyck=="N/A") ) then
+
+            ! Atom_i will always be in the central unit cell. Atom_j is dictated by x, y and z
+            ! Adding atom_i - O distance to sum_dist
+            dist_x=(cell_ortho(1, atom_i+1) - (n_cell_ortho(1, i)+n_cell_ortho(8, i)*x_prim_mul))*a
+            dist_y=(cell_ortho(2, atom_i+1) - (n_cell_ortho(2, i)+n_cell_ortho(9, i)*y_prim_mul))*b*cos(pi/6.0_dp)
+            dist_z=(cell_ortho(3, atom_i+1) - (n_cell_ortho(3, i)+n_cell_ortho(10, i)))*c
+
+            sum_dist=sqrt(dist_x**2.0_dp + dist_y**2.0_dp + dist_z**2.0_dp)
+
+            ! Adding atom_j - O distance to sum_dist
+            dist_x=((cell_ortho(1, atom_j+1)+x*x_prim_mul) - (n_cell_ortho(1, i)+n_cell_ortho(8, i)*x_prim_mul))*a
+            dist_y=((cell_ortho(2, atom_j+1)+y*y_prim_mul) - (n_cell_ortho(2, i)+n_cell_ortho(9, i)*y_prim_mul))*b*cos(pi/6.0_dp)
+            dist_z=((cell_ortho(3, atom_j+1)+z) - (n_cell_ortho(3, i)+n_cell_ortho(10, i)))*c
+
+            sum_dist=sum_dist + sqrt(dist_x**2.0_dp + dist_y**2.0_dp + dist_z**2.0_dp)
+
+            ! If the newly calculated sum_dist is greater than the sum_dist_min value, replace the min value and save O atom info
+            if (sum_dist < sum_dist_min) then
+                sum_dist_min=sum_dist
+                O_atom_index=i
+                O_x=n_cell_ortho(1, i)+n_cell_ortho(8, i)*x_prim_mul
+                O_y=n_cell_ortho(2, i)+n_cell_ortho(9, i)*y_prim_mul
+                O_z=n_cell_ortho(3, i)+n_cell_ortho(10, i)
+            end if
+        end if
+    end if
+end do
+
+i_x=cell_ortho(1, atom_i+1)
+i_y=cell_ortho(2, atom_i+1)
+i_z=cell_ortho(3, atom_i+1)
+
+j_x=cell_ortho(1, atom_j+1)+x*x_prim_mul
+j_y=cell_ortho(2, atom_j+1)+y*y_prim_mul
+j_z=cell_ortho(3, atom_j+1)+z
+
+! Calculate the side lengths
+! Need to take into account not just the fractional cell coordinates but also which relative
+! neighbouring cell the atoms might be in
+dist_x=(i_x - O_x)*a
+dist_y=(i_y - O_y)*b*cos(pi/6.0_dp)
+dist_z=(i_z - O_z)*c
+i_O=sqrt(dist_x**2.0_dp + dist_y**2.0_dp + dist_z**2.0_dp)
+
+dist_x=(j_x - O_x)*a
+dist_y=(j_y - O_y)*b*cos(pi/6.0_dp)
+dist_z=(j_z - O_z)*c
+j_O=sqrt(dist_x**2.0_dp + dist_y**2.0_dp + dist_z**2.0_dp)
+
+dist_x=(i_x - j_x)*a
+dist_y=(i_y - j_y)*b*cos(pi/6.0_dp)
+dist_z=(i_z - j_z)*c
+i_j=sqrt(dist_x**2.0_dp + dist_y**2.0_dp + dist_z**2.0_dp)
+
+bond_angle=acos((i_O**2.0_dp+j_O**2.0_dp-i_j**2.0_dp)/(2.0_dp*i_O*j_O))*180.0_dp/pi
+
+small_dist_test=(/i_O, j_O, i_j/)
+
+return
+
+end function small_dist_test
 
 end program BaFeO_hcp
 
