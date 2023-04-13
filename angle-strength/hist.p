@@ -41,4 +41,4 @@ bin(x, width)=width*floor(x/width)
 #--------------------------------------------
 # Plot graph with fit
 p \
-"angle-strength.dat" u (bin($2, binwidth)):(1.0/binwidth) smooth freq with boxes notitle
+"angle-strength.dat" u (bin($3, binwidth)):(1.0/binwidth) smooth freq with boxes notitle
