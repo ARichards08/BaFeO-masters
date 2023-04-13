@@ -22,9 +22,12 @@ integer :: failcount, x_int, y_int, z_int, mag_atoms, cell_mag_atoms, mag_atom_t
 character(:), allocatable :: fname, ucf_fname, mat_fname, interaction_type, num_char, mag_mo_char
 character(len=132), dimension(:, :), allocatable :: mat_array
 character(len=132) :: tnum, tnum2
-integer :: num_materials, interactions, srcount=0
+integer :: num_materials, interactions
 integer, dimension(:, :), allocatable :: int_out
 real(kind=dp), dimension(:, :), allocatable :: exchange_out
+
+! Testing
+real(kind=dp), dimension(4) :: angle_out
 
 ! Visualisation of the hcp unit cell http://lampx.tugraz.at/~hadley/ss1/crystalstructure/structures/hcp/hcp.php
 
@@ -284,52 +287,28 @@ end do
 
 allocate (Fe_distances(8, (cell_mag_atoms)*((cell_mag_atoms*27)-1)), stat=istat)
 if(istat/=0) stop 'Error allocating Fe_distances'
+
 Fe_distances=0.0_dp
 k=1
+
 do i=1, size(distances, 2), 1
     atom_i=distances(2, i)
     atom_j=distances(3, i)
 
     counter=0
+    ! Checks to see if the central atom and the interacting atom are both magnetic (Fe here)
+    ! If they both are, the distances can be added to Fe_distances
+    ! Note that the atom_i+1 is because of the atom_id being -1 to the array index
     if (trim(element_id(cell_ortho(4, nint(atom_i+1)))) == "Fe" .and. trim(element_id(cell_ortho(4, nint(atom_j+1)))) == "Fe") then
-        counter=2
+        counter=1
     end if
 
-    ! Checks to see if the central atom and the interacting atom are both magnetic (Fe here)
-    ! If they both are, counter=2, and the distances can be added to Fe_distances
-!    counter=0
-!    do j=1, N, 1
-        ! Finds the first atom in the unit cell
-!        if (cell_ortho(7, j) == atom_i) then
-            ! Checks if it is magnetic
-!            if (trim(element_id(cell_ortho(4, j))) == 'Fe') then
-!                counter=counter+1
-!            end if
-!        end if
-
-        ! Finds the second atom in the unit cell
-!        if (cell_ortho(7, j) == atom_j) then
-            ! Checks if it is magnetic
-!            if (trim(element_id(cell_ortho(4, j))) == 'Fe') then
-!                counter=counter+1
-!            end if
-!        end if
-!    end do
-
     ! If both are magnetic
-    if (counter == 2) then
+    if (counter == 1) then
         Fe_distances(:, k) = distances(:, i)
-
-        if (trim(element_id(cell_ortho(4, nint(Fe_distances(2, k))))) == "Sr" .or. &
-&trim(element_id(cell_ortho(4, nint(Fe_distances(3, k))))) == "Sr") then
-          srcount=srcount+1
-        end if
-
-
         k=k+1
     end if
 end do
-print *,  srcount
 
 ! For each magnetic wyckoff position, calculate the two shortest distances and save 
 ! the distances and the number of times they occur in mag_wyckoff
@@ -525,9 +504,12 @@ open (unit=30, file="angle-strength.dat", iostat=istat, status='replace')
 if (istat/=0) stop "Error opening .dat file"
 
 do i=1, size(exchange_out, 2), 1
-    write (unit=30, fmt=*, iostat=istat) trim(element_id(cell(4, (int_out(1, i))))), trim(material_id(cell(5, (int_out(1, i))))),&
-& " ", trim(material_id(cell(5, (int_out(2, i))))), trim(element_id(cell(4, (int_out(2, i))))),&
-& exchange_out(2, i), small_dist_test(int_out(1, i), int_out(2, i), int_out(3, i), int_out(4, i), int_out(5, i))
+
+    angle_out=small_dist_test(int_out(1, i), int_out(2, i), int_out(3, i), int_out(4, i), int_out(5, i))
+
+    write (unit=30, fmt=*, iostat=istat) trim(material_id(cell(5, (int_out(1, i)+1)))),&
+& " ", trim(material_id(cell(5, (int_out(2, i)+1)))), " ", trim(material_id(angle_out(1))), " ",&
+& exchange_out(2, i), angle_out(2:)
     if (istat/=0) stop "Error writing to .dat file 1"
 end do
 
@@ -1150,8 +1132,8 @@ character(len=3), dimension(2) :: O_accepted_wyck
 sum_dist_min=100000.0_dp
 
 ! Set iron atom material
-mat_i=trim(material_id(cell_ortho(5, atom_i)))
-mat_j=trim(material_id(cell_ortho(5, atom_j)))
+mat_i=trim(material_id(cell_ortho(5, atom_i+1)))
+mat_j=trim(material_id(cell_ortho(5, atom_j+1)))
 
 ! Check accepted oxygen wyckoff positions for the given iron materials
 if ((mat_i=="Fe1" .and. mat_j=="Fe3") .or. (mat_i=="Fe3" .and. mat_j=="Fe1")) then
@@ -1262,11 +1244,11 @@ end function bond_angle
 
 
 function small_dist_test(atom_i, atom_j, x, y, z)
-real(kind=dp), dimension(3) :: small_dist_test
+real(kind=dp), dimension(4) :: small_dist_test
 integer, intent(in) :: atom_i, atom_j, x, y, z
 integer :: O_atom_index, i
 real(kind=dp) :: sum_dist, sum_dist_min, dist_x, dist_y, dist_z, O_x, O_y, O_z, i_x, i_y, i_z, j_x, j_y, j_z, i_j, i_O, j_O
-real(kind=dp) :: bond_angle
+real(kind=dp) :: bond_angle, O_mat
 character(:), allocatable :: mat_i, mat_j
 
 ! Array that will contain the acceptable oxygen wyckoff positions for a pair of iron wyckoff positions
@@ -1276,8 +1258,8 @@ character(len=3), dimension(2) :: O_accepted_wyck
 sum_dist_min=100000.0_dp
 
 ! Set iron atom material
-mat_i=trim(material_id(cell_ortho(5, atom_i)))
-mat_j=trim(material_id(cell_ortho(5, atom_j)))
+mat_i=trim(material_id(cell_ortho(5, atom_i+1)))
+mat_j=trim(material_id(cell_ortho(5, atom_j+1)))
 
 ! Check accepted oxygen wyckoff positions for the given iron materials
 if ((mat_i=="Fe1" .and. mat_j=="Fe3") .or. (mat_i=="Fe3" .and. mat_j=="Fe1")) then
@@ -1354,6 +1336,8 @@ do i=1, size(n_cell_ortho, 2), 1
     end if
 end do
 
+O_mat=n_cell_ortho(5, O_atom_index)
+
 i_x=cell_ortho(1, atom_i+1)
 i_y=cell_ortho(2, atom_i+1)
 i_z=cell_ortho(3, atom_i+1)
@@ -1382,7 +1366,7 @@ i_j=sqrt(dist_x**2.0_dp + dist_y**2.0_dp + dist_z**2.0_dp)
 
 bond_angle=acos((i_O**2.0_dp+j_O**2.0_dp-i_j**2.0_dp)/(2.0_dp*i_O*j_O))*180.0_dp/pi
 
-small_dist_test=(/i_O, j_O, i_j/)
+small_dist_test=(/O_mat, i_O, j_O, i_j/)
 
 return
 
