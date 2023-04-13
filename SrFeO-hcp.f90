@@ -410,13 +410,16 @@ do i=1, size(mag_wyckoff, 2), 1
 !    & exchange_J_Nov(mag_wyckoff(1, i), mag_wyckoff(2, i), U, 1), mag_wyckoff(5, i), nint(mag_wyckoff(6, i))
 
     ! Counting interactions of nn and some nnn
-    ! Discounting some combinations, 2a+2b, 2a+2a, 2b+2b, 2a+4f2
+    ! Discounting some combinations, 2a+2b, 2a+2a, 2b+2b, 2a+4f2, 2b+4f1
     if ((trim(wyckoff_id(mag_wyckoff(1, i))) == '2a' .and. trim(wyckoff_id(mag_wyckoff(2, i))) == '2b') .or. &
     &(trim(wyckoff_id(mag_wyckoff(1, i))) == '2b' .and. trim(wyckoff_id(mag_wyckoff(2, i))) == '2a') .or. &
     &(trim(wyckoff_id(mag_wyckoff(1, i))) == '2a' .and. trim(wyckoff_id(mag_wyckoff(2, i))) == '4f2') .or. &
     &(trim(wyckoff_id(mag_wyckoff(1, i))) == '4f2' .and. trim(wyckoff_id(mag_wyckoff(2, i))) == '2a') .or. &
+    &(trim(wyckoff_id(mag_wyckoff(1, i))) == '2b' .and. trim(wyckoff_id(mag_wyckoff(2, i))) == '4f1') .or. &
+    &(trim(wyckoff_id(mag_wyckoff(1, i))) == '4f1' .and. trim(wyckoff_id(mag_wyckoff(2, i))) == '2b') .or. &
     &(trim(wyckoff_id(mag_wyckoff(1, i))) == '2a' .and. trim(wyckoff_id(mag_wyckoff(2, i))) == '2a') .or. &
     &(trim(wyckoff_id(mag_wyckoff(1, i))) == '2b' .and. trim(wyckoff_id(mag_wyckoff(2, i))) == '2b')) then
+
         continue
     else
         interactions=interactions + multiplicity(mag_wyckoff(2, i))*nint(mag_wyckoff(4, i))*prim_in_unit
@@ -492,29 +495,29 @@ do i=1, size(mag_wyckoff, 2), 1
 end do
 
 
-print *, maxval(exchange_out(2, :))
-print *, minval(exchange_out(2, :))
-print *, sum(exchange_out, 2)/size(exchange_out, 2)
-print *, size(exchange_out, 2)
+!print *, maxval(exchange_out(2, :))
+!print *, minval(exchange_out(2, :))
+!print *, sum(exchange_out, 2)/size(exchange_out, 2)
+!print *, size(exchange_out, 2)
 
 !!!!!
 ! Testing
 !!!!!
-open (unit=30, file="angle-strength.dat", iostat=istat, status='replace')
-if (istat/=0) stop "Error opening .dat file"
+!open (unit=30, file="angle-strength.dat", iostat=istat, status='replace')
+!if (istat/=0) stop "Error opening .dat file"
 
-do i=1, size(exchange_out, 2), 1
+!do i=1, size(exchange_out, 2), 1
 
-    angle_out=small_dist_test(int_out(1, i), int_out(2, i), int_out(3, i), int_out(4, i), int_out(5, i))
+!    angle_out=small_dist_test(int_out(1, i), int_out(2, i), int_out(3, i), int_out(4, i), int_out(5, i))
 
-    write (unit=30, fmt=*, iostat=istat) trim(material_id(cell(5, (int_out(1, i)+1)))),&
-& " ", trim(material_id(cell(5, (int_out(2, i)+1)))), " ", trim(material_id(angle_out(1))), " ",&
-& exchange_out(2, i), angle_out(2:)
-    if (istat/=0) stop "Error writing to .dat file 1"
-end do
+!    write (unit=30, fmt=*, iostat=istat) trim(material_id(cell(5, (int_out(1, i)+1)))),&
+!& " ", trim(material_id(cell(5, (int_out(2, i)+1)))), " ", trim(material_id(angle_out(1))), " ",&
+!& exchange_out(2, i), angle_out(2:)
+!    if (istat/=0) stop "Error writing to .dat file 1"
+!end do
 
-close (unit=30, iostat=istat)
-if (istat/=0) stop "Error closing .dat file"
+!close (unit=30, iostat=istat)
+!if (istat/=0) stop "Error closing .dat file"
 
 ! Creating the .ucf file to output
 
@@ -945,8 +948,8 @@ elseif ((wyck_i=="2a" .and. wyck_j=="12k") .or. (wyck_i=="12k" .and. wyck_j=="2a
     a=2.35593_dp ; b=-0.507986_dp ; c=0.0253374_dp
 !    a=0.0524558 ; b=-1.42884 ; c=12.3204
 !    exchange_J_Nov=0.0_dp
-elseif ((wyck_i=="2b" .and. wyck_j=="4f1") .or. (wyck_i=="4f1" .and. wyck_j=="2b")) then
-    a=0.644068_dp ; b=-0.0903629_dp ; c=0.00351908_dp
+!elseif ((wyck_i=="2b" .and. wyck_j=="4f1") .or. (wyck_i=="4f1" .and. wyck_j=="2b")) then
+!    a=0.644068_dp ; b=-0.0903629_dp ; c=0.00351908_dp
 !    a=0.0496203 ; b=-1.3895 ; c=12.0483
 !    exchange_J_Nov=-1.00_dp*10.0_dp**(-22.0_dp)
 elseif ((wyck_i=="2b" .and. wyck_j=="4f2") .or. (wyck_i=="4f2" .and. wyck_j=="2b")) then
