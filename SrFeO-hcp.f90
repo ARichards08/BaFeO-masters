@@ -22,7 +22,7 @@ integer :: failcount, x_int, y_int, z_int, mag_atoms, cell_mag_atoms, mag_atom_t
 character(:), allocatable :: fname, ucf_fname, mat_fname, interaction_type, num_char, mag_mo_char
 character(len=132), dimension(:, :), allocatable :: mat_array
 character(len=132) :: tnum, tnum2
-integer :: num_materials, interactions
+integer :: num_materials, interactions, O_mat
 integer, dimension(:, :), allocatable :: int_out
 real(kind=dp), dimension(:, :), allocatable :: exchange_out
 
@@ -473,7 +473,7 @@ do i=1, size(mag_wyckoff, 2), 1
                 end if
             end if
 
-            ! Writing out next nearest neighbour interactions
+            ! Writing out next nearest neighbour interactions for 4f1-12k and 12k-12k
             if ((round6(Fe_distances(1, j)) == mag_wyckoff(5, i)) .and. &
                 &((trim(wyckoff_id(mag_wyckoff(1, i))) == '4f1' .and. trim(wyckoff_id(mag_wyckoff(2, i))) == '12k') .or. &
                 &(trim(wyckoff_id(mag_wyckoff(1, i))) == '12k' .and. trim(wyckoff_id(mag_wyckoff(2, i))) == '4f1') .or. &
@@ -495,29 +495,35 @@ do i=1, size(mag_wyckoff, 2), 1
 end do
 
 
-!print *, maxval(exchange_out(2, :))
-!print *, minval(exchange_out(2, :))
-!print *, sum(exchange_out, 2)/size(exchange_out, 2)
-!print *, size(exchange_out, 2)
+print *, maxval(exchange_out(2, :))
+print *, minval(exchange_out(2, :))
+print *, sum(exchange_out, 2)/size(exchange_out, 2)
+print *, size(exchange_out, 2)
 
 !!!!!
 ! Testing
 !!!!!
-!open (unit=30, file="angle-strength.dat", iostat=istat, status='replace')
-!if (istat/=0) stop "Error opening .dat file"
+open (unit=30, file="angle-strength.dat", iostat=istat, status='replace')
+if (istat/=0) stop "Error opening .dat file"
 
-!do i=1, size(exchange_out, 2), 1
+counter=0
+do i=1, size(exchange_out, 2), 1
 
-!    angle_out=small_dist_test(int_out(1, i), int_out(2, i), int_out(3, i), int_out(4, i), int_out(5, i))
+    angle_out=small_dist_test(int_out(1, i), int_out(2, i), int_out(3, i), int_out(4, i), int_out(5, i))
 
-!    write (unit=30, fmt=*, iostat=istat) trim(material_id(cell(5, (int_out(1, i)+1)))),&
-!& " ", trim(material_id(cell(5, (int_out(2, i)+1)))), " ", trim(material_id(angle_out(1))), " ",&
-!& exchange_out(2, i), angle_out(2:)
-!    if (istat/=0) stop "Error writing to .dat file 1"
-!end do
+    if (angle_out(2) < 3.2 .and. angle_out(3) < 3.2) then
+        write (unit=30, fmt=*, iostat=istat) trim(material_id(cell(5, (int_out(1, i)+1)))),&
+    & " ", trim(material_id(cell(5, (int_out(2, i)+1)))), " ", trim(material_id(angle_out(1))), " ",&
+    & exchange_out(2, i), angle_out(2:)
+        if (istat/=0) stop "Error writing to .dat file 1"
+        counter=counter+1
+    end if
+end do
 
-!close (unit=30, iostat=istat)
-!if (istat/=0) stop "Error closing .dat file"
+close (unit=30, iostat=istat)
+if (istat/=0) stop "Error closing .dat file"
+
+print *, counter
 
 ! Creating the .ucf file to output
 
@@ -555,8 +561,15 @@ write (unit=10, fmt=*, iostat=istat) N, num_materials
 if (istat/=0) stop "Error writing to .ucf file atoms 2"
 
 do i=1, N, 1
+    ! Accounts for the issue of having 5 oxygen materials but only specifying one in the material file    
+    if (nint(cell_ortho(5, i)) > 6) then
+        O_mat=6
+    else
+        O_mat=nint(cell_ortho(5, i))
+    end if
+
     write (unit=10, fmt=*, iostat=istat) nint(cell_ortho(7, i)), cell_ortho(1, i)/x_prim_mul, cell_ortho(2, i)/y_prim_mul,&
-    & cell_ortho(3, i), nint(cell_ortho(5, i)), 0, 0 
+    & cell_ortho(3, i), O_mat, 0, 0 
     if (istat/=0) stop "Error writing to .ucf file atoms 3"
 end do
 
@@ -640,6 +653,9 @@ do i=1, mag_atom_types, 1
     else
         write (unit=20, fmt=*, iostat=istat) "material["//num_char//"]:initial-spin-direction=0, 0, +1"
         if (istat/=0) stop "Error writing to .mat file 7"
+        ! This line is only if you want to do anisotropy calculations
+        write (unit=20, fmt=*, iostat=istat) "material["//num_char//"]:constraint-angle-phi=45.0"
+        if (istat/=0) stop "Error writing to .mat file 8"
     end if
 
 !    write (unit=20, fmt=*, iostat=istat) "material["//num_char//"]:initial-spin-direction=random"
