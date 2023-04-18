@@ -13,6 +13,8 @@ real(kind=dp), dimension(:, :), allocatable :: atom_data, prim_cell, n_cell_orth
 real(kind=dp), dimension(:, :), allocatable :: Fe_distances, mag_wyckoff
 real(kind=dp), dimension(25) :: correct_Fe_d
 real(kind=dp) :: a, b, c, x, y, z, t, r, r2, atom_i, atom_j, min_r, min_2r, U
+logical :: anisotropy_calculation
+
 
 integer, dimension(25) :: correct_nn
 integer :: N_prim, N, istat, i, j, k, l, counter, nn, x_prim_mul, y_prim_mul, x_unit, y_unit, prim_in_unit, atom_types
@@ -33,6 +35,9 @@ real(kind=dp), dimension(4) :: angle_out
 
 ! Define potential U in eV
 U=9.25_dp
+
+! Will this be an anisotropy calculation
+anisotropy_calculation=.TRUE.
 
 ! ucf and mat file name
 fname="SrFeO-test"
@@ -653,9 +658,12 @@ do i=1, mag_atom_types, 1
     else
         write (unit=20, fmt=*, iostat=istat) "material["//num_char//"]:initial-spin-direction=0, 0, +1"
         if (istat/=0) stop "Error writing to .mat file 7"
-        ! This line is only if you want to do anisotropy calculations
-        write (unit=20, fmt=*, iostat=istat) "material["//num_char//"]:constraint-angle-phi=45.0"
-        if (istat/=0) stop "Error writing to .mat file 8"
+
+        ! Anisotropy constraints
+        if (anisotropy_calculation .eqv. .TRUE.) then
+            write (unit=20, fmt=*, iostat=istat) "material["//num_char//"]:constraint-angle-phi=45.0"
+            if (istat/=0) stop "Error writing to .mat file 8"
+        end if
     end if
 
 !    write (unit=20, fmt=*, iostat=istat) "material["//num_char//"]:initial-spin-direction=random"
