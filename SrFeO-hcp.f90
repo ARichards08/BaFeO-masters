@@ -30,14 +30,16 @@ real(kind=dp), dimension(:, :), allocatable :: exchange_out
 
 ! Testing
 real(kind=dp), dimension(4) :: angle_out
+logical :: testing
 
 ! Visualisation of the hcp unit cell http://lampx.tugraz.at/~hadley/ss1/crystalstructure/structures/hcp/hcp.php
 
 ! Define potential U in eV
 U=9.25_dp
 
-! Will this be an anisotropy calculation
+! Will this be an anisotropy calculation, do you want test outputs
 anisotropy_calculation=.TRUE.
+testing=.TRUE.
 
 ! ucf and mat file name
 fname="SrFeO-test"
@@ -500,35 +502,39 @@ do i=1, size(mag_wyckoff, 2), 1
 end do
 
 
-print *, maxval(exchange_out(2, :))
-print *, minval(exchange_out(2, :))
-print *, sum(exchange_out, 2)/size(exchange_out, 2)
-print *, size(exchange_out, 2)
-
 !!!!!
 ! Testing
 !!!!!
-open (unit=30, file="angle-strength.dat", iostat=istat, status='replace')
-if (istat/=0) stop "Error opening .dat file"
 
-counter=0
-do i=1, size(exchange_out, 2), 1
+if (testing .eqv. .TRUE.) then
 
-    angle_out=small_dist_test(int_out(1, i), int_out(2, i), int_out(3, i), int_out(4, i), int_out(5, i))
+    print *, maxval(exchange_out(2, :))
+    print *, minval(exchange_out(2, :))
+    print *, sum(exchange_out, 2)/size(exchange_out, 2)
+    print *, size(exchange_out, 2)
 
-    if (angle_out(2) < 3.2 .and. angle_out(3) < 3.2) then
-        write (unit=30, fmt=*, iostat=istat) trim(material_id(cell(5, (int_out(1, i)+1)))),&
-    & " ", trim(material_id(cell(5, (int_out(2, i)+1)))), " ", trim(material_id(angle_out(1))), " ",&
-    & exchange_out(2, i), angle_out(2:)
-        if (istat/=0) stop "Error writing to .dat file 1"
-        counter=counter+1
-    end if
-end do
+    open (unit=30, file="angle-strength.dat", iostat=istat, status='replace')
+    if (istat/=0) stop "Error opening .dat file"
 
-close (unit=30, iostat=istat)
-if (istat/=0) stop "Error closing .dat file"
+    counter=0
+    do i=1, size(exchange_out, 2), 1
 
-print *, counter
+        angle_out=small_dist_test(int_out(1, i), int_out(2, i), int_out(3, i), int_out(4, i), int_out(5, i))
+
+        if (angle_out(2) < 3.2 .and. angle_out(3) < 3.2) then
+            write (unit=30, fmt=*, iostat=istat) trim(material_id(cell(5, (int_out(1, i)+1)))),&
+        & " ", trim(material_id(cell(5, (int_out(2, i)+1)))), " ", trim(material_id(angle_out(1))), " ",&
+        & exchange_out(2, i), angle_out(2:)
+            if (istat/=0) stop "Error writing to .dat file 1"
+            counter=counter+1
+        end if
+    end do
+
+    close (unit=30, iostat=istat)
+    if (istat/=0) stop "Error closing .dat file"
+
+    print *, counter
+end if
 
 ! Creating the .ucf file to output
 
