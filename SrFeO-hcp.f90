@@ -12,7 +12,7 @@ character(len=*), parameter :: interaction_fmt="(6I4.1, E15.6E2)" , test_fmt="(B
 real(kind=dp), dimension(:, :), allocatable :: atom_data, prim_cell, n_cell_ortho, cell, cell_ortho, distances
 real(kind=dp), dimension(:, :), allocatable :: Fe_distances, mag_wyckoff
 real(kind=dp), dimension(25) :: correct_Fe_d
-real(kind=dp) :: a, b, c, x, y, z, t, r, r2, atom_i, atom_j, min_r, min_2r, U
+real(kind=dp) :: a, b, c, x, y, z, t, r, r2, atom_i, atom_j, min_r, min_2r, U, anisotropy_angle
 logical :: anisotropy_calculation
 
 
@@ -39,7 +39,9 @@ U=9.25_dp
 
 ! Will this be an anisotropy calculation, do you want test outputs
 anisotropy_calculation=.TRUE.
-testing=.TRUE.
+anisotropy_angle=45.0_dp
+anisotropy_angle=anisotropy_angle*pi/180.0_dp
+testing=.FALSE.
 
 ! ucf and mat file name
 fname="SrFeO-test"
@@ -659,16 +661,29 @@ do i=1, mag_atom_types, 1
     if (istat/=0) stop "Error writing to .mat file 5"
 
     if ((mat_array(i, 1) == "4f1") .or. (mat_array(i, 1) == "4f2")) then
-        write (unit=20, fmt=*, iostat=istat) "material["//num_char//"]:initial-spin-direction=0, 0, -1"
-        if (istat/=0) stop "Error writing to .mat file 6"
+        if (anisotropy_calculation .eqv. .TRUE.) then
+            write (unit=20, fmt=*, iostat=istat) "material["//num_char//"]:initial-spin-direction=", cos(anisotropy_angle), &
+            &", 0,", sin(anisotropy_angle)
+            if (istat/=0) stop "Error writing to .mat file 6"
+        else
+            write (unit=20, fmt=*, iostat=istat) "material["//num_char//"]:initial-spin-direction=0, 0, -1"
+            if (istat/=0) stop "Error writing to .mat file 6"
+        end if
     else
-        write (unit=20, fmt=*, iostat=istat) "material["//num_char//"]:initial-spin-direction=0, 0, +1"
-        if (istat/=0) stop "Error writing to .mat file 7"
-
+        if (anisotropy_calculation .eqv. .TRUE.) then
+            write (unit=20, fmt=*, iostat=istat) "material["//num_char//"]:initial-spin-direction=", cos(pi+anisotropy_angle), &
+            &", 0,", sin(pi+anisotropy_angle)
+            if (istat/=0) stop "Error writing to .mat file 6"
+        else
+            write (unit=20, fmt=*, iostat=istat) "material["//num_char//"]:initial-spin-direction=0, 0, +1"
+            if (istat/=0) stop "Error writing to .mat file 7"
+        end if
         ! Anisotropy constraints
         if (anisotropy_calculation .eqv. .TRUE.) then
-            write (unit=20, fmt=*, iostat=istat) "material["//num_char//"]:constraint-angle-phi=45.0"
+            write (unit=20, fmt=*, iostat=istat) "material["//num_char//"]:constrained=true"
             if (istat/=0) stop "Error writing to .mat file 8"
+            write (unit=20, fmt=*, iostat=istat) "material["//num_char//"]:constraint-angle-phi=45.0"
+            if (istat/=0) stop "Error writing to .mat file 9"
         end if
     end if
 
