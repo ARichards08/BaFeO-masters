@@ -12,7 +12,7 @@ character(len=*), parameter :: interaction_fmt="(6I4.1, E15.6E2)" , test_fmt="(B
 real(kind=dp), dimension(:, :), allocatable :: atom_data, prim_cell, n_cell_ortho, cell, cell_ortho, distances
 real(kind=dp), dimension(:, :), allocatable :: Fe_distances, mag_wyckoff
 real(kind=dp), dimension(25) :: correct_Fe_d
-real(kind=dp) :: a, b, c, x, y, z, t, r, r2, atom_i, atom_j, min_r, min_2r, U, anisotropy_angle, rescaling_exponent, rescaling_temp
+real(kind=dp) :: a, b, c, x, y, z, t, r, r2, atom_i, atom_j, min_r, min_2r, U, anisotropy_angle, rescaling_exp, rescaling_temp
 logical :: anisotropy_calculation, rescaling
 
 
@@ -21,7 +21,7 @@ integer :: N_prim, N, istat, i, j, k, l, counter, nn, x_prim_mul, y_prim_mul, x_
 integer :: failcount, x_int, y_int, z_int, mag_atoms, cell_mag_atoms, mag_atom_types, nnn
 
 ! File output
-character(:), allocatable :: fname, ucf_fname, mat_fname, interaction_type, num_char, mag_mo_char
+character(:), allocatable :: fname, ucf_fname, mat_fname, interaction_type, num_char, mag_mo_char, rescale_ex, rescale_t
 character(len=132), dimension(:, :), allocatable :: mat_array
 character(len=132) :: tnum, tnum2
 integer :: num_materials, interactions, O_mat
@@ -35,7 +35,7 @@ logical :: testing
 ! Visualisation of the hcp unit cell http://lampx.tugraz.at/~hadley/ss1/crystalstructure/structures/hcp/hcp.php
 
 ! Define potential U in eV
-U=9.25_dp
+U=0.0_dp
 
 ! Will this be an anisotropy calculation, rescaling calculation, do you want test outputs
 anisotropy_calculation=.TRUE.
@@ -45,7 +45,7 @@ rescaling=.TRUE.
 ! Simulation parameter values
 anisotropy_angle=45.0_dp
 anisotropy_angle=anisotropy_angle*pi/180.0_dp
-rescaling_exponent=1.03514_dp
+rescaling_exp=1.03514_dp
 rescaling_temp=725.0_dp
 
 ! ucf and mat file name
@@ -694,9 +694,9 @@ do i=1, mag_atom_types, 1
 
     ! Rescaling 
     if (rescaling .eqv. .TRUE.) then
-        write (unit=20, fmt=*, iostat=istat) "material["//num_char//"]:temperature_rescaling_exponent=", rescaling_exponent
+        write (unit=20, fmt=*, iostat=istat) "material["//num_char//"]:temperature-rescaling-exponent=", rescaling_exp
         if (istat/=0) stop "Error writing to .mat file 12"
-        write (unit=20, fmt=*, iostat=istat) "material["//num_char//"]:temperature_rescaling_curie-temperature=",rescaling_temp
+        write (unit=20, fmt=*, iostat=istat) "material["//num_char//"]:temperature-rescaling-curie-temperature=", rescaling_temp
         if (istat/=0) stop "Error writing to .mat file 13"
     end if
 
